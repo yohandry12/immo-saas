@@ -7,7 +7,7 @@ import {
   type RegisterInput,
   type TenantRegisterInput,
 } from "@immo/shared";
-import { randomUUID } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { redis } from "../../lib/redis.js";
 
 /**
@@ -25,7 +25,8 @@ export class ConflictError extends Error {}
 /**
  * Rôle : fabriquer la clé d'accès (JWT) remise à l'utilisateur.
  * Elle contient son identifiant (claim « sub », la convention JWT)
- * et expire après 7 jours.
+ * et expire après 15 minutes : volée, elle ne vaut presque rien.
+ * La longévité de la session vient du refresh token, pas d'elle.
  */
 function signToken(user: {
   id: string;
@@ -41,8 +42,48 @@ function signToken(user: {
       jti: randomUUID(),
     },
     process.env.JWT_SECRET!,
-    { expiresIn: "7d" },
+    { expiresIn: "15m" },
   );
+}
+
+// ---------- Refresh tokens ----------
+// Access court (15 min) + refresh long (7 jours) stocké côté serveur.
+// Le refresh est OPAQUE (pas un JWT) : révocable instantanément puisque
+// c'est Redis qui fait foi, pas une signature.
+
+const REFRESH_TTL_S = 7 * 24 * 3600; // 7 jours
+
+// On stocke le HASH du refresh token, jamais le token lui-même :
+// un dump de Redis ne permet pas de se connecter.
+function refreshKey(token: string): string {
+  return `refresh:${createHash("sha256").update(token).digest("hex")}`;
+}
+
+async function issueRefreshToken(userId: string): Promise<string> {
+  // base64url : sûr dans une URL ou un JSON sans échappement.
+  const token = randomBytes(48).toString("base64url");
+  await redis.set(refreshKey(token), userId, "EX", REFRESH_TTL_S);
+  return token;
+}
+
+/**
+ * Rôle : échanger un refresh token valide contre une NOUVELLE paire
+ * access + refresh. Rotation stricte : GETDEL rend l'ancien refresh
+ * inutilisable atomiquement — un token volé ne sert qu'une fois, et
+ * si le voleur passe avant l'utilisateur, ce dernier est déconnecté
+ * (signal visible) au lieu d'être espionné en silence.
+ */
+export async function refreshSession(refreshToken: string) {
+  const userId = await redis.getdel(refreshKey(refreshToken));
+  if (!userId) throw new AuthError();
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) throw new AuthError();
+
+  return {
+    token: signToken(user),
+    refreshToken: await issueRefreshToken(user.id),
+  };
 }
 
 /**
@@ -84,6 +125,7 @@ export async function registerUser(input: RegisterInput) {
 
   return {
     token: signToken(user),
+    refreshToken: await issueRefreshToken(user.id),
     user: {
       id: user.id,
       email: user.email,
@@ -118,6 +160,7 @@ export async function loginUser(input: LoginInput) {
 
   return {
     token: signToken(user),
+    refreshToken: await issueRefreshToken(user.id),
     user: {
       id: user.id,
       email: user.email,
@@ -177,7 +220,11 @@ export async function registerTenant(input: TenantRegisterInput) {
       })
     : { count: 0 };
 
-  return { token: signToken(user), linkedLeases: linked.count };
+  return {
+    token: signToken(user),
+    refreshToken: await issueRefreshToken(user.id),
+    linkedLeases: linked.count,
+  };
 }
 
 export async function getMe(userId: string) {
@@ -236,7 +283,17 @@ export async function deleteOwnAccount(userId: string) {
  * expiration naturelle. Après, la clé meurt toute seule : la liste noire
  * ne garde jamais de cadavres au-delà du nécessaire.
  */
-export async function terminateSession(jti?: string, exp?: number) {
+export async function terminateSession(
+  jti?: string,
+  exp?: number,
+  refreshToken?: string,
+) {
+  // Le refresh token meurt aussi : sans ça, un logout serait annulable
+  // en rejouant simplement le refresh.
+  if (refreshToken) {
+    await redis.del(refreshKey(refreshToken)).catch(() => {});
+  }
+
   if (!jti || !exp) return;
   const remainingMs = exp * 1000 - Date.now();
   if (remainingMs <= 0) return; // déjà mort naturellement : rien à noircir

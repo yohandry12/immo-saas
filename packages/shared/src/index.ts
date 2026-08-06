@@ -14,6 +14,12 @@ export function normalizePhone(raw: string): string {
   return `+${digits}`;
 }
 
+// Échange refresh token → nouvelle paire access + refresh.
+export const RefreshSchema = z.object({
+  refreshToken: z.string().min(1),
+});
+export type RefreshInput = z.infer<typeof RefreshSchema>;
+
 // Le login accepte désormais email OU téléphone.
 export const LoginSchema = z
   .object({

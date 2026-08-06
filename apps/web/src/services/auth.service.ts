@@ -9,6 +9,10 @@ export const authService = {
   registerTenant: (body: { phone: string; password: string; firstName: string; lastName: string }) =>
     api.post<AuthResponse>('/auth/tenant/register', body).then((r) => r.data),
   me: () => api.get<AuthResponse>('/auth/me').then((r) => r.data),
-  logout: () => api.post('/auth/logout'),
+  refresh: (refreshToken: string) =>
+    api
+      .post<{ token: string; refreshToken: string }>('/auth/refresh', { refreshToken })
+      .then((r) => r.data),
+  logout: (refreshToken?: string) => api.post('/auth/logout', { refreshToken }),
   deleteMe: () => api.delete('/auth/me'),
 };

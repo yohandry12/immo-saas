@@ -1,4 +1,4 @@
-export type Session = { token: string; orgId: string };
+export type Session = { token: string; refreshToken?: string; orgId: string };
 
 export function getSession(): Session | null {
   if (typeof window === 'undefined') return null;

@@ -1,8 +1,38 @@
 import { Router } from "express";
+import rateLimit from "express-rate-limit";
 import { requireAuth } from "../../middleware/requireAuth.js";
 import * as authController from "./controller.js";
 
 export const authRouter = Router();
+
+// Anti force-brute : borne les tentatives PAR ADRESSE IP.
+// La connexion est la cible n°1 (deviner des mots de passe) ;
+// l'inscription, elle, sert surtout à polluer la base.
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: { error: "Trop de tentatives. Réessayez dans 15 minutes." },
+});
+
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 10,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: { error: "Trop d'inscriptions. Réessayez dans une heure." },
+});
+
+// Le refresh est appelé toutes les ~15 min par client légitime :
+// large marge, mais bloque quand même une attaque par énumération.
+const refreshLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 60,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: { error: "Trop de requêtes. Réessayez plus tard." },
+});
 
 /**
  * @openapi
@@ -53,7 +83,7 @@ export const authRouter = Router();
  *       409:
  *         description: Un compte existe déjà avec cette adresse email. Connectez-vous plutôt.
  */
-authRouter.post("/register", authController.register);
+authRouter.post("/register", registerLimiter, authController.register);
 
 /**
  * @openapi
@@ -92,7 +122,7 @@ authRouter.post("/register", authController.register);
  *           Email ou mot de passe incorrect. Par sécurité, le message est
  *           le même que le compte existe ou non.
  */
-authRouter.post("/login", authController.login);
+authRouter.post("/login", loginLimiter, authController.login);
 
 /**
  * @openapi
@@ -133,7 +163,7 @@ authRouter.post("/login", authController.login);
  *       409:
  *         description: Un compte existe déjà avec ce téléphone.
  */
-authRouter.post("/tenant/register", authController.registerTenant);
+authRouter.post("/tenant/register", registerLimiter, authController.registerTenant);
 
 /**
  * @openapi
@@ -156,6 +186,37 @@ authRouter.post("/tenant/register", authController.registerTenant);
  *       404:
  *         description: Ce compte n'existe plus.
  */
+/**
+ * @openapi
+ * /auth/refresh:
+ *   post:
+ *     summary: Renouveler ma clé d'accès
+ *     description: >
+ *       Votre clé d'accès expire toutes les 15 minutes. Cette opération
+ *       l'échange contre une nouvelle, grâce au « jeton de renouvellement »
+ *       reçu à la connexion. Chaque jeton de renouvellement ne sert qu'une
+ *       seule fois : vous en recevez un nouveau à chaque échange.
+ *     tags:
+ *       - Authentification
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [refreshToken]
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *                 description: Le jeton de renouvellement reçu à la connexion.
+ *     responses:
+ *       200:
+ *         description: Nouvelle paire de jetons.
+ *       401:
+ *         description: Jeton inconnu, déjà utilisé ou expiré — reconnectez-vous.
+ */
+authRouter.post("/refresh", refreshLimiter, authController.refresh);
+
 authRouter.get("/me", requireAuth, authController.me);
 /**
  * @openapi

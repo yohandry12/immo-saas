@@ -1,4 +1,7 @@
 import "dotenv/config";
+// Valide TOUT le .env avant de démarrer quoi que ce soit :
+// une variable manquante = crash immédiat avec message clair.
+import { env } from "./lib/env.js";
 import express from "express";
 import type { NextFunction, Request, Response } from "express";
 import swaggerUi from "swagger-ui-express";
@@ -33,7 +36,7 @@ app.use(
 // seul NOTRE front est autorisé, pas n'importe quel site.
 app.use(
   cors({
-    origin: process.env.WEB_ORIGIN ?? "http://localhost:3000",
+    origin: env.WEB_ORIGIN,
   }),
 );
 
@@ -75,7 +78,7 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   res.status(500).json({ error: "Erreur serveur" });
 });
 
-const port = process.env.PORT ?? 4000;
+const port = env.PORT;
 app.listen(port, () => {
   console.log(`API prête sur http://localhost:${port}`);
 });

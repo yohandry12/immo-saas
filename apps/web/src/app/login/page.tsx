@@ -16,7 +16,11 @@ export default function LoginPage() {
     e.preventDefault();
     try {
       const d = await authService.login({ email, password });
-      setSession({ token: d.token, orgId: d.orgs?.[0]?.id ?? d.org!.id });
+      setSession({
+        token: d.token,
+        refreshToken: d.refreshToken,
+        orgId: d.orgs?.[0]?.id ?? d.org!.id,
+      });
       router.push("/paiement-direct");
     } catch (err) {
       setError(errorMessage(err));

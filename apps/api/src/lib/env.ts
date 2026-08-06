@@ -1,0 +1,41 @@
+import { z } from "zod";
+
+// Validation des variables d'environnement AU DÉMARRAGE.
+// Principe : crasher tout de suite avec un message clair, plutôt que
+// planter à la première requête avec un `undefined` cryptique.
+const EnvSchema = z
+  .object({
+    DATABASE_URL: z.string().min(1, "DATABASE_URL manquante"),
+    JWT_SECRET: z
+      .string()
+      .min(32, "JWT_SECRET trop courte : 32 caractères minimum"),
+    PORT: z.coerce.number().int().positive().default(4000),
+    REDIS_URL: z.string().default("redis://localhost:6379"),
+    WEB_ORIGIN: z.string().url().default("http://localhost:3000"),
+    MOMO_PROVIDER: z.enum(["mock", "notchpay"]).default("mock"),
+    NOTCHPAY_PRIVATE_KEY: z.string().optional(),
+    NOTCHPAY_HASH_KEY: z.string().optional(),
+    NOTCHPAY_WEBHOOK_URL: z.string().optional(),
+  })
+  // Les clés NotchPay ne sont obligatoires QUE si le provider est notchpay.
+  .refine(
+    (e) =>
+      e.MOMO_PROVIDER !== "notchpay" ||
+      (e.NOTCHPAY_PRIVATE_KEY && e.NOTCHPAY_HASH_KEY),
+    {
+      message:
+        "MOMO_PROVIDER=notchpay exige NOTCHPAY_PRIVATE_KEY et NOTCHPAY_HASH_KEY",
+    },
+  );
+
+const parsed = EnvSchema.safeParse(process.env);
+
+if (!parsed.success) {
+  console.error("❌ Configuration invalide (.env) :");
+  for (const issue of parsed.error.issues) {
+    console.error(`  - ${issue.path.join(".") || "(global)"}: ${issue.message}`);
+  }
+  process.exit(1);
+}
+
+export const env = parsed.data;

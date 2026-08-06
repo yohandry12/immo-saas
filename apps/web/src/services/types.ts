@@ -4,6 +4,7 @@ export type Role = "OWNER" | "MANAGER" | "TENANT";
 
 export type AuthResponse = {
   token: string;
+  refreshToken?: string;
   user: {
     id: string;
     email?: string | null;

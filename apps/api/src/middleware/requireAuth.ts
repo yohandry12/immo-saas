@@ -25,13 +25,21 @@ export async function requireAuth(
 
     // Un jeton déconnecté est mort AVANT son expiration :
     // la liste noire prime sur la date.
-    // .catch(() => 0) : Redis indisponible → fail OPEN au MVP ;
-    // en production, ce choix se discute (fail closed = plus strict).
-    const dead = payload.jti
-      ? await redis.exists(`token:blacklist:${payload.jti}`).catch(() => 0)
-      : 0;
-    if (dead) {
-      return res.status(401).json({ error: "Session expirée" });
+    // Redis indisponible → fail CLOSED : on refuse l'accès plutôt que de
+    // laisser passer un jeton potentiellement révoqué. 503 = « réessayez »,
+    // pas 401 = « reconnectez-vous ».
+    if (payload.jti) {
+      let dead: number;
+      try {
+        dead = await redis.exists(`token:blacklist:${payload.jti}`);
+      } catch {
+        return res
+          .status(503)
+          .json({ error: "Service momentanément indisponible" });
+      }
+      if (dead) {
+        return res.status(401).json({ error: "Session expirée" });
+      }
     }
 
     req.user = { id: payload.sub, email: payload.email, role: payload.role };

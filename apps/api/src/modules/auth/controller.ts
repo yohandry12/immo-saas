@@ -2,6 +2,7 @@ import type { NextFunction, Request, Response } from "express";
 import { Prisma } from "@immo/database";
 import {
   LoginSchema,
+  RefreshSchema,
   RegisterSchema,
   TenantRegisterSchema,
 } from "@immo/shared";
@@ -9,6 +10,7 @@ import {
   AuthError,
   getMe,
   loginUser,
+  refreshSession,
   registerTenant as registerTenantService,
   registerUser,
   deleteOwnAccount,
@@ -137,12 +139,38 @@ export async function deleteMe(
 }
 
 /**
- * Rôle : tuer le jeton en cours. 204 sans corps ; les autres
+ * Rôle : échanger un refresh token contre une nouvelle paire de jetons.
+ * 401 si le refresh est inconnu, déjà utilisé (rotation) ou expiré.
+ */
+export async function refresh(req: Request, res: Response, next: NextFunction) {
+  const parsed = RefreshSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "refreshToken requis" });
+  }
+
+  try {
+    const result = await refreshSession(parsed.data.refreshToken);
+    return res.json(result);
+  } catch (e) {
+    if (e instanceof AuthError) {
+      return res.status(401).json({ error: "Session expirée" });
+    }
+    return next(e);
+  }
+}
+
+/**
+ * Rôle : tuer la session en cours — jeton d'accès (blacklist) ET
+ * refresh token si le client le fournit. 204 sans corps ; les autres
  * appareils connectés ne sont pas touchés (blacklist par jeton).
  */
 export async function logout(req: Request, res: Response, next: NextFunction) {
   try {
-    await terminateSession(req.token?.jti, req.token?.exp);
+    const refreshToken =
+      typeof req.body?.refreshToken === "string"
+        ? req.body.refreshToken
+        : undefined;
+    await terminateSession(req.token?.jti, req.token?.exp, refreshToken);
     return res.status(204).send();
   } catch (e) {
     return next(e);
