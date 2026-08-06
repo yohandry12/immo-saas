@@ -1,4 +1,4 @@
-import { prisma } from "@immo/database";
+import { prisma, Prisma } from "@immo/database";
 import { normalizePhone } from "@immo/shared";
 import { eventBus } from "../../lib/eventBus.js";
 import type {
@@ -46,33 +46,48 @@ export async function createLease(orgId: string, input: CreateLeaseInput) {
   // (avance, loyer contractuel, caution) sont déjà dans le bail.
   const expectedMoveInTotal = input.advanceMonths * rentAmount + depositAmount;
 
-  const [lease] = await prisma.$transaction([
-    prisma.lease.create({
-      data: {
-        unitId: unit.id,
-        tenantName: input.tenantName,
-        tenantPhone: normalizePhone(input.tenantPhone),
-        rentAmount,
-        startDate: input.startDate ? new Date(input.startDate) : new Date(),
-        endDate: input.endDate ? new Date(input.endDate) : null,
-        advanceMonths: input.advanceMonths,
-        depositAmount: input.depositAmount ?? null,
-      },
-    }),
-    prisma.activityEvent.create({
-      data: {
-        orgId,
-        type: "LEASE_SIGNED",
-        payload: {
-          unitLabel: unit.label,
+  let lease;
+  try {
+    [lease] = await prisma.$transaction([
+      prisma.lease.create({
+        data: {
+          unitId: unit.id,
           tenantName: input.tenantName,
+          tenantPhone: normalizePhone(input.tenantPhone),
+          rentAmount,
+          startDate: input.startDate ? new Date(input.startDate) : new Date(),
+          endDate: input.endDate ? new Date(input.endDate) : null,
           advanceMonths: input.advanceMonths,
-          depositAmount,
-          expectedMoveInTotal,
+          depositAmount: input.depositAmount ?? null,
         },
-      },
-    }),
-  ]);
+      }),
+      prisma.activityEvent.create({
+        data: {
+          orgId,
+          type: "LEASE_SIGNED",
+          payload: {
+            unitLabel: unit.label,
+            tenantName: input.tenantName,
+            advanceMonths: input.advanceMonths,
+            depositAmount,
+            expectedMoveInTotal,
+          },
+        },
+      }),
+    ]);
+  } catch (e) {
+    // P2002 sur l'index partiel Lease_one_active_per_unit : deux créations
+    // simultanées ont passé le findFirst ci-dessus — PostgreSQL tranche.
+    if (
+      e instanceof Prisma.PrismaClientKnownRequestError &&
+      e.code === "P2002"
+    ) {
+      throw new ConflictError(
+        "Un bail actif existe déjà pour cet appartement.",
+      );
+    }
+    throw e;
+  }
 
   eventBus.publish(orgId, {
     type: "LEASE_SIGNED",
@@ -104,6 +119,8 @@ export async function listLeases(orgId: string, query: ListLeasesQuery) {
     include: {
       unit: { select: { label: true, building: { select: { name: true } } } },
     },
+    take: query.limit,
+    skip: query.offset,
   });
 }
 

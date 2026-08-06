@@ -1,5 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
-import { DashboardQuerySchema } from "@immo/shared";
+import { DashboardQuerySchema, PaginationSchema } from "@immo/shared";
 import { eventBus } from "../../lib/eventBus.js";
 import * as dashboardService from "./service.js";
 
@@ -31,8 +31,12 @@ export async function activity(
   res: Response,
   next: NextFunction,
 ) {
+  // ?limit=1..100, défaut 20 — le feed n'est pas un export comptable.
+  const parsed = PaginationSchema.pick({ limit: true }).safeParse(req.query);
+  const limit = Math.min(parsed.success ? parsed.data.limit : 20, 100);
+
   try {
-    return res.json(await dashboardService.getActivity(req.orgId!));
+    return res.json(await dashboardService.getActivity(req.orgId!, limit));
   } catch (e) {
     return next(e);
   }

@@ -159,6 +159,12 @@ model Lease {
   payments      Payment[]
 
   @@index([unitId])
+  // Rattachement compte locataire ↔ baux : recherche directe par téléphone
+  // normalisé au lieu de charger tous les baux en mémoire.
+  @@index([tenantPhone])
+  // S'ajoute ici un index UNIQUE PARTIEL créé à la main dans la migration
+  // (Prisma ne sait pas l'exprimer) : un seul bail ACTIF (endDate NULL)
+  // par appartement — la règle du service, gravée dans PostgreSQL.
 }
 
 // ---------- Charges communes ----------

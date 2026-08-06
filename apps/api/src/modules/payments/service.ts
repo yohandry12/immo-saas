@@ -216,5 +216,7 @@ export async function listPayments(orgId: string, query: ListPaymentsQuery) {
     },
     orderBy: { paidAt: "desc" },
     include: { unit: { select: { label: true } } },
+    take: query.limit,
+    skip: query.offset,
   });
 }

@@ -201,24 +201,13 @@ export async function registerTenant(input: TenantRegisterInput) {
     },
   });
 
-  const matchingLeases = await prisma.lease.findMany({
-    where: { tenantId: null, tenantPhone: { not: null } },
-    select: { id: true, tenantPhone: true },
+  // Les téléphones sont normalisés à l'écriture (services + backfill de la
+  // migration) : la recherche directe suffit, servie par l'index
+  // Lease_tenantPhone_idx — plus de chargement de tous les baux en mémoire.
+  const linked = await prisma.lease.updateMany({
+    where: { tenantId: null, tenantPhone: phone },
+    data: { tenantId: user.id },
   });
-
-  const matchingIds = matchingLeases
-    .filter(
-      ({ tenantPhone }) =>
-        !!tenantPhone && normalizePhone(tenantPhone) === phone,
-    )
-    .map(({ id }) => id);
-
-  const linked = matchingIds.length
-    ? await prisma.lease.updateMany({
-        where: { id: { in: matchingIds } },
-        data: { tenantId: user.id },
-      })
-    : { count: 0 };
 
   return {
     token: signToken(user),

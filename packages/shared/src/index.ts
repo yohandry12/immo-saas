@@ -93,10 +93,18 @@ export const RecordPaymentSchema = z
   });
 export type RecordPaymentInput = z.infer<typeof RecordPaymentSchema>;
 
+// Pagination commune : les query params arrivent en strings, coerce les
+// convertit. Bornée à 200 : personne ne télécharge la table entière.
+export const PaginationSchema = z.object({
+  limit: z.coerce.number().int().positive().max(200).default(50),
+  offset: z.coerce.number().int().nonnegative().default(0),
+});
+
 export const ListPaymentsQuerySchema = z.object({
   unitId: z.string().optional(),
   kind: z.enum(["RENT", "CHARGE", "DEPOSIT"]).optional(),
   status: z.enum(["PENDING", "CONFIRMED", "FAILED"]).optional(),
+  ...PaginationSchema.shape,
 });
 export type ListPaymentsQuery = z.infer<typeof ListPaymentsQuerySchema>;
 // ---------- Contrats baux ----------
@@ -116,6 +124,7 @@ export type CreateLeaseInput = z.infer<typeof CreateLeaseSchema>;
 // Les query params arrivent en STRINGS : on valide 'true'/'false'.
 export const ListLeasesQuerySchema = z.object({
   active: z.enum(["true", "false"]).optional(),
+  ...PaginationSchema.shape,
 });
 export type ListLeasesQuery = z.infer<typeof ListLeasesQuerySchema>;
 
