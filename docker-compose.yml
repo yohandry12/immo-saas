@@ -1,0 +1,37 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: immo
+      POSTGRES_PASSWORD: immo_dev
+      POSTGRES_DB: immo
+    ports:
+      - "5432:5432"
+    volumes:
+      - immo_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      # pg_isready vérifie que Postgres accepte les connexions —
+      # utile plus tard quand l'API dépendra de lui au démarrage
+      test: ["CMD-SHELL", "pg_isready -U immo"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    # Le mot de passe évite qu'un Redis exposé sur localhost soit ouvert
+    # à tout process de ta machine ; en prod il viendra d'une variable d'env
+    command: redis-server --requirepass immo_redis_dev
+    ports:
+      - "6379:6379"
+    volumes:
+      - immo_redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "immo_redis_dev", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  immo_pgdata:
+  immo_redisdata:

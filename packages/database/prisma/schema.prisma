@@ -1,0 +1,264 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Enums ----------
+
+enum Role {
+  OWNER
+  MANAGER
+  TENANT
+}
+
+enum PaymentKind {
+  RENT
+  CHARGE
+  DEPOSIT
+}
+
+enum PaymentMethod {
+  CASH
+  MOMO
+  ORANGE_MONEY
+  BANK
+}
+
+enum PaymentStatus {
+  PENDING
+  CONFIRMED
+  FAILED
+}
+
+enum ChargeRule {
+  EQUAL
+  BY_AREA
+  BY_OCCUPANTS
+  CUSTOM
+}
+
+enum BillStatus {
+  DRAFT
+  SENT
+}
+
+// ---------- Utilisateurs & organisations ----------
+
+model User {
+  id           String   @id @default(cuid())
+  email        String?  @unique
+  phone        String?  @unique
+  passwordHash String?
+  firstName    String
+  lastName     String
+  // Rôle global du compte (type d'inscription).
+  // Le rôle DANS une organisation vit sur Membership — deux notions distinctes.
+  role         Role     @default(OWNER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  memberships      Membership[]
+  ownedOrgs        Organization[]
+  managedBuildings Building[]
+  tenantLeases     Lease[]
+  recordedPayments Payment[]
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  ownerId   String   @unique // MVP : 1 propriétaire = 1 portefeuille
+  owner     User     @relation(fields: [ownerId], references: [id])
+  createdAt DateTime @default(now())
+
+  memberships Membership[]
+  buildings   Building[]
+  payments    Payment[]
+  expenses    Expense[]
+  activity    ActivityEvent[]
+}
+
+model Membership {
+  id        String       @id @default(cuid())
+  userId    String
+  orgId     String
+  role      Role         @default(MANAGER)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  createdAt DateTime     @default(now())
+
+  // Clé composite : un utilisateur n'apparaît qu'une fois par org.
+  // C'est elle qui rend le findUnique du middleware requireOrg possible.
+  @@unique([userId, orgId])
+  @@index([orgId])
+}
+
+// ---------- Immobilier ----------
+
+model Building {
+  id        String       @id @default(cuid())
+  orgId     String
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  name      String
+  address   String?
+  city      String
+  managerId String?
+  manager   User?        @relation(fields: [managerId], references: [id], onDelete: SetNull)
+  createdAt DateTime     @default(now())
+
+  units    Unit[]
+  bills    ChargeBill[]
+  expenses Expense[]
+
+  @@index([orgId])
+}
+
+model Unit {
+  id         String   @id @default(cuid())
+  buildingId String
+  building   Building @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  label      String   // "A1", "B3"...
+  floor      Int?
+  surfaceM2  Float?
+  occupants  Int      @default(1)
+  rentAmount Int      // FCFA/mois — pas de décimales, le FCFA n'a pas de centimes
+
+   // Était « lease Lease? » : un appartement vit plusieurs baux
+  // successifs, l'historique est conservé.
+  leases      Lease[]
+  allocations ChargeAllocation[]
+  payments    Payment[]
+
+  @@unique([buildingId, label])
+  @@index([buildingId])
+}
+
+
+model Lease {
+  id        String   @id @default(cuid())
+  unitId    String
+  // Plus de @unique : la règle « un seul bail ACTIF par appartement »
+  // (endDate null) est appliquée par le service, pas par la contrainte.
+  unit      Unit     @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  tenantId  String?
+  tenant    User?    @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  // Locataire sans compte (MVP) : identité + canal WhatsApp.
+  tenantName  String?
+  tenantPhone String?
+  // Loyer CONTRACTUEL figé à la signature — peut différer de
+  // unit.rentAmount (loyer demandé actuel).
+  rentAmount    Int
+  startDate     DateTime
+  endDate       DateTime?
+  advanceMonths Int      @default(1)
+  depositAmount Int?
+  payments      Payment[]
+
+  @@index([unitId])
+}
+
+// ---------- Charges communes ----------
+
+model ChargeBill {
+  id         String     @id @default(cuid())
+  buildingId String
+  building   Building   @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  type       String     // "WATER" | "ELECTRICITY" | "OTHER"
+  amount     Int        // montant total de la facture, FCFA
+  period     String     // "2026-06"
+  rule       ChargeRule @default(EQUAL)
+  status     BillStatus @default(DRAFT)
+  createdAt  DateTime   @default(now())
+
+  allocations ChargeAllocation[]
+
+  @@index([buildingId])
+}
+
+model ChargeAllocation {
+  id     String     @id @default(cuid())
+  billId String
+  bill   ChargeBill @relation(fields: [billId], references: [id], onDelete: Cascade)
+  unitId String
+  unit   Unit       @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  // SNAPSHOT de la répartition : jamais recalculé après envoi,
+  // même si la facture est modifiée ensuite. Ce qui a été réclamé
+  // au locataire est gravé dans le marbre.
+  amount Int
+  paid   Boolean    @default(false)
+
+  @@unique([billId, unitId])
+}
+
+// ---------- Argent ----------
+
+model Payment {
+  id      String        @id @default(cuid())
+  // Dénormalisation volontaire : orgId permet de filtrer tous les
+  // paiements du tenant sans remonter lease -> unit -> building -> org.
+  orgId   String
+  org     Organization  @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  leaseId String?
+  lease   Lease?        @relation(fields: [leaseId], references: [id], onDelete: SetNull)
+  unitId  String
+  // Restrict : PostgreSQL REFUSERA de supprimer un appartement
+  // qui a un historique de paiements. On ne détruit pas la comptabilité.
+  unit         Unit          @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  kind         PaymentKind
+  method       PaymentMethod
+  amount       Int
+  status       PaymentStatus @default(PENDING)
+  // Référence du webhook Mobile Money : unique = idempotence.
+  // Si l'agrégateur renvoie le même webhook deux fois, l'insertion
+  // échoue silencieusement au lieu de créditer deux fois.
+  externalRef  String?       @unique
+  recordedById String?
+  recordedBy   User?         @relation(fields: [recordedById], references: [id], onDelete: SetNull)
+  paidAt       DateTime?
+  createdAt    DateTime      @default(now())
+    // Traçabilité qui survit à l'auteur : si le compte de l'agent est
+  // supprimé, recordedById passe à null (SetNull) mais le NOM reste.
+  recordedByName String?
+
+ // Période couverte, format "AAAA-MM".
+  // Avance de 6 mois : periodFrom = premier mois, periodTo = sixième.
+  // Absents = le paiement couvre le mois de paidAt (comportement actuel).
+  periodFrom String?
+  periodTo   String?
+  @@index([orgId, status])
+  @@index([orgId, paidAt])
+}
+
+model Expense {
+  id          String       @id @default(cuid())
+  orgId       String
+  org         Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  buildingId  String
+  building    Building     @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  category    String       // "PLUMBING" | "ELECTRIC" | "OTHER"
+  amount      Int
+  description String
+  photos      String[]     // URLs vers le stockage objet
+  createdAt   DateTime     @default(now())
+
+  @@index([orgId])
+}
+
+// ---------- Transparence (le feed du dashboard diaspora) ----------
+
+model ActivityEvent {
+  id        String       @id @default(cuid())
+  orgId     String
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  type      String       // "PAYMENT_RECEIVED" | "BILL_SENT" | "EXPENSE_CREATED"...
+  payload   Json
+  createdAt DateTime     @default(now())
+
+  // Index composite : le dashboard requête "les événements de CETTE org,
+  // du plus récent au plus ancien" — exactement ce pattern.
+  @@index([orgId, createdAt])
+}

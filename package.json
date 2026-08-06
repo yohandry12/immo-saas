@@ -1,0 +1,12 @@
+{
+  "name": "immo-saas",
+  "private": true,
+  "scripts": {
+    "dev:api": "pnpm --filter @immo/api dev",
+    "dev:web": "pnpm --filter @immo/web dev"
+  },
+  "dependencies": {
+    "@immo/database": "workspace:*",
+    "@immo/shared": "workspace:*"
+  }
+}

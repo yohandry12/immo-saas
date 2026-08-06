@@ -1,0 +1,51 @@
+{
+  "name": "@immo/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "test:isolation": "tsx src/scripts/testIsolation.ts",
+    "test:auth": "tsx src/scripts/testAuth.ts",
+    "test:buildings": "tsx src/scripts/testBuildings.ts",
+    "test:payments": "tsx src/scripts/testPayments.ts",
+    "test:leases": "tsx src/scripts/testLeases.ts",
+    "test:dashboard": "tsx src/scripts/testDashboard.ts",
+    "test:charges": "tsx src/scripts/testCharges.ts",
+    "test:momo": "tsx src/scripts/testMomo.ts",
+    "test:tenant": "tsx src/scripts/testTenant.ts",
+    "test:expenses": "tsx src/scripts/testExpenses.ts",
+    "test:permissions": "tsx src/scripts/testPermissions.ts",
+    "test:dataprotection": "tsx src/scripts/testDataProtection.ts",
+    "test:session": "tsx src/scripts/testSession.ts"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^3.0.0",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^20.19.43",
+    "@types/swagger-jsdoc": "^6.0.4",
+    "@types/swagger-ui-express": "^4.1.8",
+    "prisma": "^7.9.1",
+    "tsx": "^4.23.5",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@immo/database": "workspace:*",
+    "@immo/shared": "workspace:*",
+    "@prisma/client": "^6.19.3",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "helmet": "^8.3.0",
+    "ioredis": "^6.0.0",
+    "jsonwebtoken": "^9.0.3",
+    "swagger-jsdoc": "^6.3.0",
+    "swagger-ui-express": "^5.0.1",
+    "zod": "^4.4.3"
+  }
+}
