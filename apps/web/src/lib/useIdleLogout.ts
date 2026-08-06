@@ -1,6 +1,7 @@
 "use client";
 import { useEffect } from "react";
 import { api } from "./api";
+import { goToLogin } from "./navigation";
 import { clearSession, getSession } from "./session";
 
 // Le navigateur MESURE l'inactivité ; le serveur EXÉCUTE la sentence.
@@ -19,7 +20,7 @@ export function useIdleLogout(enabled: boolean, timeoutMs = 15 * 60 * 1000) {
         .catch(() => {})
         .finally(() => {
           clearSession();
-          window.location.href = "/login";
+          goToLogin();
         });
     };
 

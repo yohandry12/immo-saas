@@ -1,4 +1,5 @@
 import axios from "axios";
+import { goToLogin } from "./navigation";
 import { clearSession, getSession, setSession } from "./session";
 
 export const API_URL =
@@ -72,7 +73,7 @@ api.interceptors.response.use(
       }
 
       clearSession();
-      window.location.href = "/login";
+      goToLogin();
     }
     return Promise.reject(error);
   },
