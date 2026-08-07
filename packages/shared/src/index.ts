@@ -263,10 +263,11 @@ export type ChargeBillStatus = "DRAFT" | "SENT";
  * (une seule org créée), `orgs` par /auth/login et /auth/me.
  * Les DEUX sont absents pour un compte locataire : il n'a pas de
  * portefeuille — d'où l'optionnalité, que le front doit gérer.
+ * Le refresh token n'apparaît dans AUCUNE de ces réponses : il est posé
+ * en cookie httpOnly par l'API (voir apps/api/src/lib/authCookie.ts).
  */
 export type AuthResponse = {
   token: string;
-  refreshToken?: string;
   user: {
     id: string;
     email?: string | null;
@@ -279,10 +280,11 @@ export type AuthResponse = {
 
 /** Réponse de POST /auth/tenant/register : aucun bail n'est rattaché
  * automatiquement — `pendingLeases` compte ceux qui attendent la
- * confirmation du propriétaire. */
+ * confirmation du propriétaire.
+ * Le refresh token n'est PAS dans le corps : il part en cookie
+ * httpOnly, hors de portée du JavaScript. */
 export type TenantRegisterResponse = {
   token: string;
-  refreshToken?: string;
   pendingLeases: number;
 };
 
