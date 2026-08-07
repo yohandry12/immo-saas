@@ -19,7 +19,9 @@ export function useActivityFeed(enabled: boolean) {
 
     (async () => {
       const session = getSession();
-      if (!session) return;
+      // Le flux d'activité est scoped org : sans orgId (compte
+      // locataire), il n'existe pas — on ne se connecte pas.
+      if (!session?.orgId) return;
 
       const res = await fetch(`${API_URL}/dashboard/stream`, {
         headers: {

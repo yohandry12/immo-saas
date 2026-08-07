@@ -14,7 +14,8 @@ api.interceptors.request.use((config) => {
   const session = getSession();
   if (session) {
     config.headers.Authorization = `Bearer ${session.token}`;
-    config.headers["X-Org-Id"] = session.orgId;
+    // Un compte locataire n'a pas d'org : on n'envoie pas d'en-tête vide.
+    if (session.orgId) config.headers["X-Org-Id"] = session.orgId;
   }
   return config;
 });

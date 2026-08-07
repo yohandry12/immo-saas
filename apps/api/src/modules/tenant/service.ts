@@ -35,16 +35,38 @@ export async function getTenantHome(tenantId: string) {
     },
   });
 
+  const leaseIds = leases.map((l) => l.id);
   const unitIds = leases.map((l) => l.unitId);
   const [rentPayments, unpaidCharges] = await Promise.all([
     prisma.payment.findMany({
-      where: { unitId: { in: unitIds }, kind: "RENT", status: "CONFIRMED" },
+      // Scope par BAIL, pas par appartement : les paiements d'un
+      // occupant précédent du même appartement ne comptent pas.
+      // leaseId null = écritures d'avant le rattachement systématique ;
+      // on les borne alors à la période du bail (filtre ci-dessous).
+      where: {
+        kind: "RENT",
+        status: "CONFIRMED",
+        OR: [
+          { leaseId: { in: leaseIds } },
+          { leaseId: null, unitId: { in: unitIds } },
+        ],
+      },
     }),
     prisma.chargeAllocation.findMany({
       where: { unitId: { in: unitIds }, paid: false, bill: { status: "SENT" } },
       include: { bill: { select: { type: true, period: true } } },
     }),
   ]);
+
+  const belongsToLease = (
+    p: (typeof rentPayments)[number],
+    lease: (typeof leases)[number],
+  ) => {
+    if (p.leaseId) return p.leaseId === lease.id;
+    if (p.unitId !== lease.unitId) return false;
+    // Héritage sans leaseId : le paiement doit dater du bail en cours.
+    return (p.paidAt ?? p.createdAt) >= lease.startDate;
+  };
 
   return {
     period,
@@ -55,7 +77,7 @@ export async function getTenantHome(tenantId: string) {
       city: lease.unit.building.city,
       rentAmount: lease.rentAmount,
       rentPaidForCurrentMonth: rentPayments.some(
-        (p) => p.unitId === lease.unitId && covers(p, period),
+        (p) => belongsToLease(p, lease) && covers(p, period),
       ),
       unpaidCharges: unpaidCharges
         .filter((a) => a.unitId === lease.unitId)
@@ -70,21 +92,45 @@ export async function getTenantHome(tenantId: string) {
 }
 
 /**
- * Rôle : l'historique complet — tous les paiements confirmés des
- * appartements que le locataire a occupés (baux actifs ET passés),
- * du plus récent au plus ancien. Ce sont ses reçus.
+ * Rôle : l'historique complet — tous les paiements confirmés des BAUX
+ * du locataire (actifs ET passés), du plus récent au plus ancien.
+ * Scope par bail, jamais par appartement : un appartement a plusieurs
+ * occupants dans sa vie, et les reçus des autres ne le regardent pas.
+ * Les écritures d'avant le rattachement (leaseId null) sont bornées
+ * aux dates du bail correspondant.
  */
 export async function getTenantPayments(tenantId: string) {
   const leases = await prisma.lease.findMany({
     where: { tenantId },
-    select: { unitId: true },
+    select: { id: true, unitId: true, startDate: true, endDate: true },
   });
-  const unitIds = leases.map((l) => l.unitId);
-  if (unitIds.length === 0) return [];
+  if (leases.length === 0) return [];
 
-  return prisma.payment.findMany({
-    where: { unitId: { in: unitIds }, status: "CONFIRMED" },
+  const leaseIds = leases.map((l) => l.id);
+  const unitIds = leases.map((l) => l.unitId);
+
+  const payments = await prisma.payment.findMany({
+    where: {
+      status: "CONFIRMED",
+      OR: [
+        { leaseId: { in: leaseIds } },
+        { leaseId: null, unitId: { in: unitIds } },
+      ],
+    },
     orderBy: { paidAt: "desc" },
     include: { unit: { select: { label: true } } },
+  });
+
+  // Filet héritage : un paiement sans leaseId n'est un reçu du locataire
+  // que s'il tombe pendant l'un de SES baux sur cet appartement.
+  return payments.filter((p) => {
+    if (p.leaseId) return true;
+    const at = p.paidAt ?? p.createdAt;
+    return leases.some(
+      (l) =>
+        l.unitId === p.unitId &&
+        at >= l.startDate &&
+        (l.endDate === null || at <= l.endDate),
+    );
   });
 }

@@ -71,7 +71,7 @@ export default function LocatairePage() {
         <Card>
           <EmptyState
             title="Aucun bail rattaché à votre compte"
-            hint="Votre bail est rattaché automatiquement via votre numéro de téléphone. Si votre propriétaire vous a enregistré avec un autre numéro, signalez-le-lui."
+            hint="Votre propriétaire doit confirmer le rattachement de votre compte à votre bail. Vérifiez avec lui que votre numéro de téléphone est bien celui du bail."
           />
         </Card>
       )}

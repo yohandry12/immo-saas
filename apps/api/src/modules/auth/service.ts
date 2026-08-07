@@ -183,9 +183,12 @@ export async function loginUser(input: LoginInput) {
  * @returns null si l'utilisateur n'existe plus (compte supprimé)
  */
 /**
- * Rôle : créer un compte locataire par téléphone, SANS organisation,
- * puis rattacher d'un coup les baux qui portent ce téléphone et n'ont
- * pas encore de compte. Le téléphone normalisé est la clé de jointure.
+ * Rôle : créer un compte locataire par téléphone, SANS organisation.
+ * AUCUN bail n'est rattaché ici : connaître un numéro ne prouve pas
+ * qu'on le possède. Le rattachement est un acte du PROPRIÉTAIRE
+ * (POST /leases/:id/attach-tenant) — sans cette confirmation, un
+ * inconnu qui devine le téléphone d'un locataire lirait son loyer
+ * et tout son historique de paiements.
  */
 export async function registerTenant(input: TenantRegisterInput) {
   const phone = normalizePhone(input.phone);
@@ -201,18 +204,16 @@ export async function registerTenant(input: TenantRegisterInput) {
     },
   });
 
-  // Les téléphones sont normalisés à l'écriture (services + backfill de la
-  // migration) : la recherche directe suffit, servie par l'index
-  // Lease_tenantPhone_idx — plus de chargement de tous les baux en mémoire.
-  const linked = await prisma.lease.updateMany({
+  // Purement informatif : combien de baux attendent la confirmation du
+  // propriétaire pour ce numéro (index Lease_tenantPhone_idx).
+  const pendingLeases = await prisma.lease.count({
     where: { tenantId: null, tenantPhone: phone },
-    data: { tenantId: user.id },
   });
 
   return {
     token: signToken(user),
     refreshToken: await issueRefreshToken(user.id),
-    linkedLeases: linked.count,
+    pendingLeases,
   };
 }
 

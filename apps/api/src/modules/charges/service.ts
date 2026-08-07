@@ -199,19 +199,34 @@ export async function markAllocationPaid(
   if (!allocation) throw new NotFoundError();
   if (allocation.paid) throw new ConflictError("Cette part est déjà réglée.");
 
-  const unit = await prisma.unit.findUnique({
-    where: { id: allocation.unitId },
-  });
-
-  const [updated] = await prisma.$transaction([
-    prisma.chargeAllocation.update({
-      where: { id: allocationId },
-      data: { paid: true },
+  const [unit, activeLease] = await Promise.all([
+    prisma.unit.findUnique({ where: { id: allocation.unitId } }),
+    // Rattachement au bail actif : le reçu appartient à CE locataire,
+    // pas à l'appartement pour l'éternité.
+    prisma.lease.findFirst({
+      where: { unitId: allocation.unitId, endDate: null },
+      select: { id: true },
     }),
-    prisma.payment.create({
+  ]);
+
+  // Transition CONDITIONNELLE : le check `allocation.paid` ci-dessus est
+  // une lecture — deux requêtes simultanées le passent toutes les deux.
+  // Le updateMany où paid=false garantit qu'UNE SEULE écrit le Payment ;
+  // l'autre voit count = 0 et repart en 409, sans double écriture.
+  const updated = await prisma.$transaction(async (tx) => {
+    const marked = await tx.chargeAllocation.updateMany({
+      where: { id: allocationId, paid: false },
+      data: { paid: true },
+    });
+    if (marked.count === 0) {
+      throw new ConflictError("Cette part est déjà réglée.");
+    }
+
+    await tx.payment.create({
       data: {
         orgId,
         unitId: allocation.unitId,
+        leaseId: activeLease?.id ?? null,
         kind: "CHARGE",
         method: input.method,
         amount: allocation.amount,
@@ -226,8 +241,12 @@ export async function markAllocationPaid(
         periodFrom: bill.period,
         periodTo: bill.period,
       },
-    }),
-  ]);
+    });
+
+    return tx.chargeAllocation.findUniqueOrThrow({
+      where: { id: allocationId },
+    });
+  });
 
   eventBus.publish(orgId, {
     type: "PAYMENT_RECORDED",

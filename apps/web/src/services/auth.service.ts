@@ -7,7 +7,12 @@ export const authService = {
   register: (body: { email: string; password: string; firstName: string; lastName: string; orgName: string }) =>
     api.post<AuthResponse>('/auth/register', body).then((r) => r.data),
   registerTenant: (body: { phone: string; password: string; firstName: string; lastName: string }) =>
-    api.post<AuthResponse>('/auth/tenant/register', body).then((r) => r.data),
+    api
+      .post<{ token: string; refreshToken?: string; pendingLeases: number }>(
+        '/auth/tenant/register',
+        body,
+      )
+      .then((r) => r.data),
   me: () => api.get<AuthResponse>('/auth/me').then((r) => r.data),
   refresh: (refreshToken: string) =>
     api

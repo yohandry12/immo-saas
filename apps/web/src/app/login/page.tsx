@@ -11,7 +11,7 @@ import { Card } from "@/components/ui/Card";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -21,13 +21,17 @@ export default function LoginPage() {
     setBusy(true);
     setError("");
     try {
-      const d = await authService.login({ email, password });
-      setSession({
-        token: d.token,
-        refreshToken: d.refreshToken,
-        orgId: d.orgs?.[0]?.id ?? d.org!.id,
-      });
-      router.push("/dashboard");
+      // « @ » = email (propriétaire) ; sinon téléphone (locataire).
+      const id = identifier.trim();
+      const d = await authService.login(
+        id.includes("@")
+          ? { email: id, password }
+          : { phone: id, password },
+      );
+      // Un locataire n'a aucune org : session sans orgId, espace dédié.
+      const orgId = d.orgs?.[0]?.id ?? d.org?.id;
+      setSession({ token: d.token, refreshToken: d.refreshToken, orgId });
+      router.push(orgId ? "/dashboard" : "/locataire");
     } catch (err) {
       setError(errorMessage(err));
       setBusy(false);
@@ -46,11 +50,12 @@ export default function LoginPage() {
         </p>
         <form onSubmit={submit} className="flex flex-col gap-16">
           <Input
-            label="Email"
-            type="email"
-            placeholder="vous@exemple.cm"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            label="Email ou téléphone"
+            type="text"
+            autoComplete="username"
+            placeholder="vous@exemple.cm ou 699 00 00 00"
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
             required
           />
           <Input
@@ -71,6 +76,13 @@ export default function LoginPage() {
         Pas encore de compte ?{" "}
         <Link href="/register" className="font-medium text-hof hover:underline">
           Créer mon portefeuille
+        </Link>{" "}
+        ·{" "}
+        <Link
+          href="/register/locataire"
+          className="font-medium text-hof hover:underline"
+        >
+          Je suis locataire
         </Link>
       </p>
     </main>

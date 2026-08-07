@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 
-export type Session = { token: string; refreshToken?: string; orgId: string };
+// orgId absent = compte locataire : pas de portefeuille, pas de X-Org-Id.
+export type Session = { token: string; refreshToken?: string; orgId?: string };
 
 // Présence de session, hydration-safe : le serveur répond « non » (il ne
 // voit pas localStorage), le client corrige juste après l'hydratation.

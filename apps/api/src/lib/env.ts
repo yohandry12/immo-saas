@@ -5,6 +5,9 @@ import { z } from "zod";
 // planter à la première requête avec un `undefined` cryptique.
 const EnvSchema = z
   .object({
+    NODE_ENV: z
+      .enum(["development", "test", "production"])
+      .default("development"),
     DATABASE_URL: z.string().min(1, "DATABASE_URL manquante"),
     JWT_SECRET: z
       .string()
@@ -26,7 +29,15 @@ const EnvSchema = z
       message:
         "MOMO_PROVIDER=notchpay exige NOTCHPAY_PRIVATE_KEY et NOTCHPAY_HASH_KEY",
     },
-  );
+  )
+  // Fail-closed : le provider mock ne vérifie AUCUNE signature de webhook.
+  // En production, un déploiement qui l'oublierait laisserait n'importe qui
+  // confirmer son propre loyer en forgeant l'appel — donc on refuse de
+  // démarrer plutôt que d'encaisser du vent.
+  .refine((e) => e.NODE_ENV !== "production" || e.MOMO_PROVIDER !== "mock", {
+    message:
+      "MOMO_PROVIDER=mock est interdit en production : les webhooks ne seraient pas vérifiés. Configurez MOMO_PROVIDER=notchpay.",
+  });
 
 const parsed = EnvSchema.safeParse(process.env);
 

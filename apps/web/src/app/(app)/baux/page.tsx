@@ -98,6 +98,18 @@ export default function BauxPage() {
     onError: (e) => setTerminateError(errorMessage(e)),
   });
 
+  // Confirmation propriétaire : donne au compte locataire (même numéro)
+  // l'accès à son bail et à ses reçus. 409 si aucun compte n'existe encore.
+  const [attachFeedback, setAttachFeedback] = useState("");
+  const attach = useMutation({
+    mutationFn: (id: string) => leasesService.attachTenant(id),
+    onSuccess: () => {
+      invalidate();
+      setAttachFeedback("Compte locataire rattaché.");
+    },
+    onError: (e) => setAttachFeedback(errorMessage(e)),
+  });
+
   const list = leases.data ?? [];
 
   return (
@@ -154,6 +166,12 @@ export default function BauxPage() {
         </Card>
       )}
 
+      {attachFeedback && (
+        <p role="status" className="text-[13px] text-foggy">
+          {attachFeedback}
+        </p>
+      )}
+
       {list.length > 0 && (
         <Card className="p-4">
           <Table>
@@ -195,6 +213,18 @@ export default function BauxPage() {
                     )}
                   </Td>
                   <Td className="text-right">
+                    {!l.endDate && !l.tenantId && l.tenantPhone && (
+                      <button
+                        onClick={() => {
+                          setAttachFeedback("");
+                          attach.mutate(l.id);
+                        }}
+                        disabled={attach.isPending}
+                        className="rounded-lg px-8 py-4 text-[13px] font-medium text-foggy hover:bg-faint hover:text-hof"
+                      >
+                        Rattacher le compte
+                      </button>
+                    )}
                     {!l.endDate && (
                       <button
                         onClick={() => {

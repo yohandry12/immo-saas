@@ -18,4 +18,8 @@ export const leasesService = {
     api
       .post(`/leases/${id}/terminate`, endDate ? { endDate } : {})
       .then((r) => r.data),
+  // Confirmation par le propriétaire : rattache le compte locataire
+  // (créé avec le même téléphone) à ce bail.
+  attachTenant: (id: string) =>
+    api.post(`/leases/${id}/attach-tenant`).then((r) => r.data),
 };

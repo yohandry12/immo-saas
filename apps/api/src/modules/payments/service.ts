@@ -49,6 +49,14 @@ export async function recordPayment(
 
   const paidAt = input.paidAt ? new Date(input.paidAt) : new Date();
 
+  // Le paiement est rattaché au BAIL actif, pas seulement à
+  // l'appartement : c'est ce qui empêche un futur occupant de voir
+  // les reçus de l'occupant actuel dans son historique locataire.
+  const activeLease = await prisma.lease.findFirst({
+    where: { unitId: unit.id, endDate: null },
+    select: { id: true },
+  });
+
   // Forme « tableau » du $transaction : les deux écritures sont
   // indépendantes l'une de l'autre (toutes les valeurs sont déjà
   // connues), donc on les envoie en un seul aller-retour base de données.
@@ -57,6 +65,7 @@ export async function recordPayment(
       data: {
         orgId,
         unitId: unit.id,
+        leaseId: activeLease?.id ?? null,
         kind: input.kind,
         method: input.method,
         amount: input.amount,
@@ -132,10 +141,17 @@ export async function initiateMomoPayment(
     method: input.method,
   });
 
+  // Même règle que recordPayment : rattachement au bail actif.
+  const activeLease = await prisma.lease.findFirst({
+    where: { unitId: unit.id, endDate: null },
+    select: { id: true },
+  });
+
   const payment = await prisma.payment.create({
     data: {
       orgId,
       unitId: unit.id,
+      leaseId: activeLease?.id ?? null,
       kind: "RENT",
       method: input.method,
       amount,
@@ -165,15 +181,23 @@ export async function confirmMomoPayment(reference: string, success: boolean) {
     return { processed: false };
   }
 
-  const [updated] = await prisma.$transaction([
-    prisma.payment.update({
-      where: { id: payment.id },
+  const newStatus = success ? ("CONFIRMED" as const) : ("FAILED" as const);
+
+  // Transition CONDITIONNELLE : le updateMany n'écrit que si le paiement
+  // est ENCORE en PENDING au moment du commit. Deux webhooks rejoués en
+  // parallèle passent tous deux le check ci-dessus ; un seul gagne ici,
+  // l'autre voit count = 0 et ne crée pas d'événement dupliqué.
+  const won = await prisma.$transaction(async (tx) => {
+    const updated = await tx.payment.updateMany({
+      where: { id: payment.id, status: "PENDING" },
       data: {
-        status: success ? "CONFIRMED" : "FAILED",
+        status: newStatus,
         paidAt: success ? new Date() : null,
       },
-    }),
-    prisma.activityEvent.create({
+    });
+    if (updated.count === 0) return false;
+
+    await tx.activityEvent.create({
       data: {
         orgId: payment.orgId,
         type: success ? "PAYMENT_CONFIRMED" : "PAYMENT_FAILED",
@@ -183,8 +207,11 @@ export async function confirmMomoPayment(reference: string, success: boolean) {
           method: payment.method,
         },
       },
-    }),
-  ]);
+    });
+    return true;
+  });
+
+  if (!won) return { processed: false };
 
   eventBus.publish(payment.orgId, {
     type: success ? "PAYMENT_CONFIRMED" : "PAYMENT_FAILED",
@@ -196,7 +223,7 @@ export async function confirmMomoPayment(reference: string, success: boolean) {
     createdAt: new Date().toISOString(),
   });
 
-  return { processed: true, status: updated.status };
+  return { processed: true, status: newStatus };
 }
 
 /**

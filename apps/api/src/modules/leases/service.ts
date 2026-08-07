@@ -155,6 +155,58 @@ export async function getLease(orgId: string, leaseId: string) {
 }
 
 /**
+ * Rôle : rattacher le COMPTE locataire à son bail, sur décision du
+ * propriétaire. C'est LA vérification de possession du numéro : le
+ * compte n'accède aux données du bail (loyer, reçus) qu'après ce geste.
+ * Le téléphone du compte doit correspondre à celui du bail — le
+ * propriétaire confirme une identité, il n'en invente pas une.
+ *
+ * @throws NotFoundError bail inexistant ou hors de l'org
+ * @throws ConflictError déjà rattaché, sans téléphone, ou aucun compte
+ */
+export async function attachTenant(orgId: string, leaseId: string) {
+  const lease = await prisma.lease.findUnique({
+    where: { id: leaseId },
+    select: {
+      id: true,
+      tenantId: true,
+      tenantPhone: true,
+      unit: { select: { label: true, building: { select: { orgId: true } } } },
+    },
+  });
+  if (!lease || lease.unit.building.orgId !== orgId) throw new NotFoundError();
+
+  if (lease.tenantId) {
+    throw new ConflictError("Un compte est déjà rattaché à ce bail.");
+  }
+  if (!lease.tenantPhone) {
+    throw new ConflictError("Ce bail n'a pas de téléphone de locataire.");
+  }
+
+  const account = await prisma.user.findUnique({
+    where: { phone: lease.tenantPhone },
+    select: { id: true, role: true },
+  });
+  if (!account || account.role !== "TENANT") {
+    throw new ConflictError(
+      "Aucun compte locataire n'existe avec le téléphone de ce bail.",
+    );
+  }
+
+  // Conditionnel : si un autre rattachement est passé entre-temps,
+  // count = 0 et on ne écrase rien.
+  const updated = await prisma.lease.updateMany({
+    where: { id: lease.id, tenantId: null },
+    data: { tenantId: account.id },
+  });
+  if (updated.count === 0) {
+    throw new ConflictError("Un compte est déjà rattaché à ce bail.");
+  }
+
+  return { leaseId: lease.id, tenantId: account.id };
+}
+
+/**
  * Rôle : mettre fin à un bail (date fournie ou aujourd'hui).
  * L'appartement redevient louable immédiatement, l'historique reste.
  *

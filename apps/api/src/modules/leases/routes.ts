@@ -158,6 +158,51 @@ leasesRouter.get("/:id", requireAuth, requireOrg, leasesController.getById);
 
 /**
  * @openapi
+ * /leases/{id}/attach-tenant:
+ *   post:
+ *     summary: Rattacher le compte de votre locataire à son bail
+ *     description: >
+ *       Quand votre locataire crée son compte dans l'application (avec le
+ *       même numéro de téléphone que sur le bail), rien ne se passe tant
+ *       que VOUS n'avez pas confirmé : c'est cette confirmation. Elle
+ *       protège ses données — sans elle, n'importe qui connaissant son
+ *       numéro pourrait lire son loyer et ses reçus.
+ *     tags:
+ *       - Baux
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: header
+ *         name: X-Org-Id
+ *         required: true
+ *         schema: { type: string }
+ *         description: L'identifiant de votre portefeuille.
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *         description: L'identifiant du bail.
+ *     responses:
+ *       200:
+ *         description: Compte rattaché. Le locataire voit désormais son logement et ses reçus.
+ *       401:
+ *         description: Clé d'accès absente ou expirée.
+ *       403:
+ *         description: Le portefeuille indiqué ne vous appartient pas.
+ *       404:
+ *         description: Ce bail n'existe pas dans votre portefeuille.
+ *       409:
+ *         description: Déjà rattaché, bail sans téléphone, ou aucun compte locataire avec ce numéro.
+ */
+leasesRouter.post(
+  "/:id/attach-tenant",
+  requireAuth,
+  requireOrg,
+  leasesController.attachTenant,
+);
+
+/**
+ * @openapi
  * /leases/{id}/terminate:
  *   post:
  *     summary: Mettre fin à un bail

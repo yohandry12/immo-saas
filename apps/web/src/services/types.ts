@@ -51,6 +51,8 @@ export type Payment = {
 
 export type Lease = {
   id: string;
+  // null = le locataire n'a pas (encore) de compte rattaché à ce bail.
+  tenantId?: string | null;
   tenantName: string | null;
   tenantPhone: string | null;
   rentAmount: number;

@@ -69,6 +69,31 @@ export async function getById(
 }
 
 /**
+ * Rôle : confirmer le rattachement du compte locataire à un bail.
+ * Acte du propriétaire — c'est lui qui atteste que le compte créé
+ * avec ce téléphone est bien celui de SON locataire.
+ */
+export async function attachTenant(
+  req: Request<{ id: string }>,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    return res.json(
+      await leaseService.attachTenant(req.orgId!, req.params.id),
+    );
+  } catch (e) {
+    if (e instanceof leaseService.NotFoundError) {
+      return res.status(404).json({ error: e.message });
+    }
+    if (e instanceof leaseService.ConflictError) {
+      return res.status(409).json({ error: e.message });
+    }
+    return next(e);
+  }
+}
+
+/**
  * Rôle : mettre fin à un bail. Le body est facultatif (date de fin
  * optionnelle) : d'où le « req.body ?? {} » — sans body du tout,
  * Express laisse req.body UNDEFINED, pas {}.
