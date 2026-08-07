@@ -43,7 +43,63 @@ export type Payment = {
   status: "PENDING" | "CONFIRMED" | "FAILED";
   recordedByName?: string | null;
   paidAt?: string | null;
+  createdAt?: string;
+  periodFrom?: string | null;
+  periodTo?: string | null;
   unit?: { label: string };
+};
+
+export type Lease = {
+  id: string;
+  tenantName: string | null;
+  tenantPhone: string | null;
+  rentAmount: number;
+  advanceMonths: number;
+  depositAmount: number | null;
+  startDate: string;
+  endDate: string | null;
+  unit: { label: string; building: { name: string } };
+};
+
+export type ChargeBill = {
+  id: string;
+  buildingId: string;
+  type: string;
+  amount: number;
+  period: string;
+  rule: "EQUAL" | "BY_AREA" | "BY_OCCUPANTS" | "CUSTOM";
+  status: "DRAFT" | "SENT";
+  createdAt: string;
+  building: { name: string };
+  allocations: {
+    id: string;
+    amount: number;
+    paid: boolean;
+    unit: { label: string };
+  }[];
+};
+
+export type Expense = {
+  id: string;
+  buildingId: string;
+  category: string;
+  amount: number;
+  description: string;
+  photos: string[];
+  createdAt: string;
+  building?: { name: string };
+};
+
+export type Member = {
+  id: string;
+  role: Role;
+  user: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string | null;
+    phone: string | null;
+  };
 };
 
 export type Summary = {

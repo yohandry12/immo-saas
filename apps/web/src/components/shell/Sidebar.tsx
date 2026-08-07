@@ -2,17 +2,15 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-// Une seule entrée réellement câblée aujourd'hui (paiement-direct) ;
-// les autres apparaissent désactivées — la carte du produit est visible
-// dès maintenant, les écrans arrivent en F2.
 export const navItems: { label: string; href: string; ready: boolean }[] = [
   { label: "Tableau de bord", href: "/dashboard", ready: true },
   { label: "Immeubles", href: "/immeubles", ready: true },
-  { label: "Baux", href: "/baux", ready: false },
-  { label: "Paiements", href: "/paiement-direct", ready: true },
-  { label: "Charges", href: "/charges", ready: false },
-  { label: "Dépenses", href: "/depenses", ready: false },
-  { label: "Organisation", href: "/organisation", ready: false },
+  { label: "Baux", href: "/baux", ready: true },
+  { label: "Paiements", href: "/paiements", ready: true },
+  { label: "Charges", href: "/charges", ready: true },
+  { label: "Dépenses", href: "/depenses", ready: true },
+  { label: "Organisation", href: "/organisation", ready: true },
+  { label: "Mon compte", href: "/compte", ready: true },
 ];
 
 export function Sidebar() {
