@@ -1,11 +1,9 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { errorMessage } from "@/lib/api";
 import { getSession } from "@/lib/session";
 import { useActivityFeed } from "@/lib/useActivityFeed";
-import { useIdleLogout } from "@/lib/useIdleLogout";
 import { buildingsService } from "@/services/buildings.service";
 import { paymentsService } from "@/services/payments.service";
 import type { Building, Payment, Unit } from "@/services/types";
@@ -25,7 +23,6 @@ const input = {
 } as const;
 
 export default function PaiementDirectPage() {
-  const router = useRouter();
   const [buildings, setBuildings] = useState<Building[]>([]);
   // Plus de state `units` : selectedBuildingUnits le dérive directement.
   const [buildingId, setBuildingId] = useState("");
@@ -40,8 +37,8 @@ export default function PaiementDirectPage() {
   // Plus de setState synchrones dans un effect.
   const isReady = !!getSession();
 
+  // Garde de session + idle logout : gérés par le layout (app).
   const events = useActivityFeed(isReady);
-  useIdleLogout(isReady);
 
   const refreshPayments = useCallback(() => {
     paymentsService
@@ -49,11 +46,6 @@ export default function PaiementDirectPage() {
       .then(setPayments)
       .catch(() => {});
   }, []);
-
-  // Redirection si non connecté — effect qui NE fait que router.push.
-  useEffect(() => {
-    if (!getSession()) router.push("/login");
-  }, [router]);
 
   // Chargement des immeubles — une seule fois, après le montage.
   useEffect(() => {

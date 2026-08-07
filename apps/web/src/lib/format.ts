@@ -1,0 +1,19 @@
+// Formatage FCFA centralisé : entiers, séparateur d'espace, jamais de
+// décimales (le franc CFA n'en a pas). « 150000 » → « 150 000 FCFA ».
+const nf = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 });
+
+export function formatFCFA(amount: number): string {
+  return `${nf.format(amount)} FCFA`;
+}
+
+// Date courte lisible : « 7 août 2026 ».
+const df = new Intl.DateTimeFormat("fr-FR", {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+});
+
+export function formatDate(d: string | Date | null | undefined): string {
+  if (!d) return "—";
+  return df.format(typeof d === "string" ? new Date(d) : d);
+}

@@ -9,23 +9,33 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 
-export default function LoginPage() {
+// Inscription propriétaire : compte + « portefeuille » (organisation)
+// créés d'un seul geste — miroir du POST /auth/register.
+export default function RegisterPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [form, setForm] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    password: "",
+    orgName: "",
+  });
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+
+  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm((f) => ({ ...f, [k]: e.target.value }));
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
     setError("");
     try {
-      const d = await authService.login({ email, password });
+      const d = await authService.register(form);
       setSession({
         token: d.token,
         refreshToken: d.refreshToken,
-        orgId: d.orgs?.[0]?.id ?? d.org!.id,
+        orgId: d.org!.id,
       });
       router.push("/paiement-direct");
     } catch (err) {
@@ -37,40 +47,62 @@ export default function LoginPage() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-24 p-16">
       <h1 className="text-heading-sm font-bold text-rausch">Immo</h1>
-      <Card className="w-full max-w-[400px] p-24">
+      <Card className="w-full max-w-[440px] p-24">
         <h2 className="text-subheading font-semibold text-hof mb-4">
-          Connexion
+          Créer mon compte
         </h2>
         <p className="text-[14px] text-foggy mb-24">
-          Retrouvez vos immeubles, où que vous soyez.
+          Votre portefeuille d&apos;immeubles, géré depuis n&apos;importe où.
         </p>
         <form onSubmit={submit} className="flex flex-col gap-16">
+          <div className="grid grid-cols-2 gap-12">
+            <Input
+              label="Prénom"
+              value={form.firstName}
+              onChange={set("firstName")}
+              required
+            />
+            <Input
+              label="Nom"
+              value={form.lastName}
+              onChange={set("lastName")}
+              required
+            />
+          </div>
           <Input
             label="Email"
             type="email"
             placeholder="vous@exemple.cm"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            value={form.email}
+            onChange={set("email")}
             required
           />
           <Input
             label="Mot de passe"
             type="password"
-            placeholder="••••••••"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            placeholder="8 caractères minimum"
+            minLength={8}
+            value={form.password}
+            onChange={set("password")}
+            required
+          />
+          <Input
+            label="Nom du portefeuille"
+            placeholder="Ex. : Immeubles Essomba"
+            value={form.orgName}
+            onChange={set("orgName")}
             required
           />
           {error && <p className="text-[13px] text-rausch-600">{error}</p>}
           <Button variant="accent" type="submit" disabled={busy}>
-            {busy ? "Connexion…" : "Entrer"}
+            {busy ? "Création…" : "Créer mon portefeuille"}
           </Button>
         </form>
       </Card>
       <p className="text-[14px] text-foggy">
-        Pas encore de compte ?{" "}
-        <Link href="/register" className="font-medium text-hof hover:underline">
-          Créer mon portefeuille
+        Déjà un compte ?{" "}
+        <Link href="/login" className="font-medium text-hof hover:underline">
+          Me connecter
         </Link>
       </p>
     </main>
