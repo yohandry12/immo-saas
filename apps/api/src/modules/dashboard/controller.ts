@@ -53,6 +53,9 @@ export function stream(req: Request, res: Response) {
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
+  // Nginx bufferise par défaut : sans ceci, les événements restent
+  // coincés dans le proxy au lieu d'arriver en direct.
+  res.setHeader("X-Accel-Buffering", "no");
   res.flushHeaders();
 
   // Format SSE : une ligne « data: » JSON, puis une ligne vide.
@@ -60,7 +63,19 @@ export function stream(req: Request, res: Response) {
     res.write(`data: ${JSON.stringify(event)}\n\n`);
   });
 
-  // Quand l'onglet se ferme, libérer le listener — sinon une
-  // fuite d'un listener par visite, et le serveur s'essouffle.
-  req.on("close", unsubscribe);
+  // Battement de cœur : un commentaire SSE (ligne « : ») toutes les 25 s.
+  // Sans trafic, proxys et pare-feux coupent une connexion inactive vers
+  // 60 s — sur réseau mobile camerounais, souvent bien avant. Le
+  // commentaire n'est pas un événement : le client l'ignore, mais la
+  // connexion reste vivante.
+  const heartbeat = setInterval(() => {
+    res.write(`: ping\n\n`);
+  }, 25_000);
+
+  // Quand l'onglet se ferme, libérer le listener ET le minuteur — sinon
+  // une fuite par visite, et le serveur s'essouffle.
+  req.on("close", () => {
+    clearInterval(heartbeat);
+    unsubscribe();
+  });
 }

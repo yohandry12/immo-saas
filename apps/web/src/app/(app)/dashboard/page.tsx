@@ -31,12 +31,22 @@ export default function DashboardPage() {
   // Flux SSE : chaque événement rafraîchit les chiffres du mois,
   // « voir ses loyers tomber en direct ». Le layout (app) garantit
   // déjà la session : pas de lecture de localStorage pendant le rendu.
-  const live = useActivityFeed(true);
+  const { events: live, connected } = useActivityFeed(true);
   useEffect(() => {
     if (live.length > 0) {
       queryClient.invalidateQueries({ queryKey: ["summary"] });
     }
   }, [live.length, queryClient]);
+
+  // Le flux se reconnecte tout seul après une coupure ; le temps qu'il
+  // reprenne, l'historique reste affiché. On invalide au retour du
+  // direct : les événements survenus pendant la coupure sont rattrapés.
+  useEffect(() => {
+    if (connected) {
+      queryClient.invalidateQueries({ queryKey: ["activity"] });
+      queryClient.invalidateQueries({ queryKey: ["summary"] });
+    }
+  }, [connected, queryClient]);
 
   // Historique + direct fusionnés, dédupliqués (type+date), 30 max.
   const feed = useMemo(() => {
