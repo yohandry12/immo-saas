@@ -1,9 +1,15 @@
 import { Router } from "express";
 import rateLimit from "express-rate-limit";
+import cookieParser from "cookie-parser";
 import { requireAuth } from "../../middleware/requireAuth.js";
 import * as authController from "./controller.js";
 
 export const authRouter = Router();
+
+// Le cookie de refresh n'est lu QUE par les routes d'authentification :
+// on monte le parseur ici plutôt que globalement, pour que le reste de
+// l'API n'ait aucune raison de connaître ce cookie.
+authRouter.use(cookieParser());
 
 // Anti force-brute : borne les tentatives PAR ADRESSE IP.
 // La connexion est la cible n°1 (deviner des mots de passe) ;
@@ -263,4 +269,10 @@ authRouter.delete("/me", requireAuth, authController.deleteMe);
  *       401:
  *         description: Clé d'accès absente ou déjà morte.
  */
-authRouter.post("/logout", requireAuth, authController.logout);
+// PAS de requireAuth : l'access vit désormais en mémoire et disparaît
+// au rechargement de page. Exiger un access valide rendrait le logout
+// impossible juste après une expiration — le cookie resterait posé,
+// donc la session réellement vivante. Le controller révoque ce qu'il
+// peut : le refresh (par le cookie) toujours, l'access seulement si un
+// jeton exploitable accompagne la requête.
+authRouter.post("/logout", authController.logout);
