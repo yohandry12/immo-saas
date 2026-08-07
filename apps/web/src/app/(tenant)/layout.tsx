@@ -1,7 +1,8 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
-import { clearSession, signalLogout, useHasSession } from "@/lib/session";
+import { useEffect, useState } from "react";
+import { restoreSession } from "@/lib/api";
+import { clearSession, onLogoutSignal, signalLogout, useHasSession } from "@/lib/session";
 import { useIdleLogout } from "@/lib/useIdleLogout";
 import { goToLogin } from "@/lib/navigation";
 import { authService } from "@/services/auth.service";
@@ -17,13 +18,40 @@ export default function TenantLayout({
 }) {
   const router = useRouter();
   const hasSession = useHasSession();
+  // Même raison que le shell propriétaire : l'access est en mémoire et
+  // doit être régénéré par le cookie avant de rendre quoi que ce soit.
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    // false = certitude d'absence ; null = hydratation en cours, on attend.
-    if (hasSession === false) router.replace("/login");
+    if (hasSession === false) {
+      router.replace("/login");
+      return;
+    }
+    if (hasSession !== true) return;
+
+    let cancelled = false;
+    restoreSession().then((ok) => {
+      if (cancelled) return;
+      if (!ok) {
+        clearSession();
+        router.replace("/login");
+        return;
+      }
+      setReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [hasSession, router]);
 
-  useIdleLogout(hasSession === true);
+  useEffect(() => {
+    return onLogoutSignal(() => {
+      clearSession();
+      goToLogin();
+    });
+  }, []);
+
+  useIdleLogout(ready);
 
   async function logout() {
     try {
@@ -36,7 +64,7 @@ export default function TenantLayout({
     goToLogin();
   }
 
-  if (!hasSession) return null;
+  if (!hasSession || !ready) return null;
 
   return (
     <div className="flex min-h-screen flex-col">
