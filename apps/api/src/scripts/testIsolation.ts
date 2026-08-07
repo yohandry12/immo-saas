@@ -4,6 +4,7 @@ import "dotenv/config"; // DOIT être la première ligne : charge DATABASE_URL a
 import assert from "node:assert";
 import { prisma } from "@immo/database";
 import { requireOrg } from "../middleware/requireOrg.js"; // .js — règle ESM déjà vue
+import { guardLocalDatabase } from "./guardLocalDatabase.js";
 
 function fakeContext(userId: string, orgId: string) {
   const req = {
@@ -34,6 +35,11 @@ function fakeContext(userId: string, orgId: string) {
 }
 
 async function main() {
+  // AVANT toute écriture : refuse de tourner si DATABASE_URL ne pointe
+  // pas vers une base locale ou de test. Le deleteMany ci-dessous est
+  // sans where — sur la mauvaise base, c'est la perte totale.
+  guardLocalDatabase("test:isolation");
+
   // Nettoyage : l'ordre compte — les enfants (memberships) avant
   // les parents (organizations) à cause des clés étrangères.
   await prisma.membership.deleteMany();

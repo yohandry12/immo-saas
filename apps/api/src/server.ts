@@ -23,6 +23,23 @@ import helmet from "helmet";
 
 const app = express();
 
+// Combien de proxys séparent l'API du vrai client. Sans ce réglage,
+// derrière un reverse proxy req.ip vaut l'IP du proxy — identique pour
+// tout le monde — et le rate-limit de /auth/login verrouille alors
+// TOUS les utilisateurs après 10 tentatives d'un seul.
+// Valeur volontairement explicite (jamais `true`) : faire confiance à
+// n'importe quel X-Forwarded-For laisserait un attaquant forger son IP
+// et contourner le rate-limit à volonté.
+app.set("trust proxy", env.TRUST_PROXY);
+
+if (env.NODE_ENV === "production" && env.TRUST_PROXY === 0) {
+  console.warn(
+    "⚠️  TRUST_PROXY=0 en production : correct seulement si l'API est " +
+      "exposée en direct. Derrière un reverse proxy, réglez TRUST_PROXY " +
+      "sur le nombre de sauts, sinon le rate-limit est inopérant.",
+  );
+}
+
 // En-têtes de sécurité HTTP (X-Content-Type-Options, HSTS, etc.).
 // contentSecurityPolicy assoupli pour laisser Swagger UI charger ses scripts.
 app.use(

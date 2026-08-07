@@ -13,6 +13,13 @@ const EnvSchema = z
       .string()
       .min(32, "JWT_SECRET trop courte : 32 caractères minimum"),
     PORT: z.coerce.number().int().positive().default(4000),
+    // Nombre de proxys de confiance DEVANT l'API (reverse proxy, load
+    // balancer, CDN). Express remonte alors X-Forwarded-For de ce nombre
+    // de sauts pour retrouver la vraie IP du client.
+    // 0 = l'API est exposée directement (développement).
+    // Mal réglé, req.ip devient l'IP du proxy : le rate-limit compte
+    // alors TOUS les utilisateurs ensemble et les verrouille d'un bloc.
+    TRUST_PROXY: z.coerce.number().int().min(0).default(0),
     REDIS_URL: z.string().default("redis://localhost:6379"),
     WEB_ORIGIN: z.string().url().default("http://localhost:3000"),
     MOMO_PROVIDER: z.enum(["mock", "notchpay"]).default("mock"),
