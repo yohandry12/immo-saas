@@ -19,7 +19,8 @@
     "test:expenses": "tsx src/scripts/testExpenses.ts",
     "test:permissions": "tsx src/scripts/testPermissions.ts",
     "test:dataprotection": "tsx src/scripts/testDataProtection.ts",
-    "test:session": "tsx src/scripts/testSession.ts"
+    "test:session": "tsx src/scripts/testSession.ts",
+    "test:refresh-cookie": "tsx src/scripts/testRefreshCookie.ts"
   },
   "devDependencies": {
     "@types/bcryptjs": "^3.0.0",
