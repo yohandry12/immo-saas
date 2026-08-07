@@ -37,7 +37,7 @@ export default function RegisterPage() {
         refreshToken: d.refreshToken,
         orgId: d.org!.id,
       });
-      router.push("/paiement-direct");
+      router.push("/dashboard");
     } catch (err) {
       setError(errorMessage(err));
       setBusy(false);

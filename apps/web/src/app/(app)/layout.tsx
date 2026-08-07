@@ -1,23 +1,24 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { getSession } from "@/lib/session";
+import { useHasSession } from "@/lib/session";
 import { useIdleLogout } from "@/lib/useIdleLogout";
-import { Sidebar } from "@/components/shell/Sidebar";
+import { MobileNav, Sidebar } from "@/components/shell/Sidebar";
 import { Topbar } from "@/components/shell/Topbar";
 
 // Coquille des écrans connectés : garde de session + sidebar + topbar.
-// La session vit en localStorage → vérification côté client uniquement
-// (un middleware serveur ne la voit pas).
+// useHasSession est hydration-safe : le serveur rend « pas de session »
+// (null), le client corrige après hydratation — jamais de mismatch.
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const hasSession = !!getSession();
-
-  useIdleLogout(hasSession);
+  const hasSession = useHasSession();
 
   useEffect(() => {
-    if (!hasSession) router.replace("/login");
+    // false = certitude d'absence ; null = hydratation en cours, on attend.
+    if (hasSession === false) router.replace("/login");
   }, [hasSession, router]);
+
+  useIdleLogout(hasSession === true);
 
   if (!hasSession) return null;
 
@@ -26,7 +27,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar />
-        <main className="flex-1 p-24">{children}</main>
+        <MobileNav />
+        <main className="flex-1 p-16 md:p-24">{children}</main>
       </div>
     </div>
   );

@@ -65,6 +65,35 @@
   --shadow-dropdown: 0 6px 20px rgba(0, 0, 0, 0.2);
 }
 
+/* Entrée d'un événement du feed temps réel : le contenu est visible par
+   défaut, l'animation ne fait qu'accompagner l'arrivée. */
+@keyframes feed-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+.animate-feed-in {
+  animation: feed-in 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Point « en direct » : pulsation discrète = le flux SSE est connecté. */
+@keyframes live-pulse {
+  50% {
+    opacity: 0.4;
+  }
+}
+.animate-live-pulse {
+  animation: live-pulse 2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-feed-in,
+  .animate-live-pulse {
+    animation: none;
+  }
+}
+
 body {
   background: var(--color-faint);
   color: var(--color-hof);

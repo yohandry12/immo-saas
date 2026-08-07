@@ -27,7 +27,7 @@ export default function LoginPage() {
         refreshToken: d.refreshToken,
         orgId: d.orgs?.[0]?.id ?? d.org!.id,
       });
-      router.push("/paiement-direct");
+      router.push("/dashboard");
     } catch (err) {
       setError(errorMessage(err));
       setBusy(false);
@@ -63,7 +63,7 @@ export default function LoginPage() {
           />
           {error && <p className="text-[13px] text-rausch-600">{error}</p>}
           <Button variant="accent" type="submit" disabled={busy}>
-            {busy ? "Connexion…" : "Entrer"}
+            {busy ? "Connexion…" : "Me connecter"}
           </Button>
         </form>
       </Card>

@@ -9,7 +9,7 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace(getSession() ? "/paiement-direct" : "/login");
+    router.replace(getSession() ? "/dashboard" : "/login");
   }, [router]);
 
   return null;
