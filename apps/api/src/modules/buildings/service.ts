@@ -52,7 +52,19 @@ export async function listBuildings(orgId: string) {
 export async function getBuilding(orgId: string, buildingId: string) {
   const building = await prisma.building.findUnique({
     where: { id: buildingId },
-    include: { units: { orderBy: { label: "asc" } } },
+    include: {
+      units: {
+        orderBy: { label: "asc" },
+        // Le bail ACTIF de chaque appartement : c'est lui qui dit
+        // « occupé par X » ou « vacant » sur la fiche immeuble.
+        include: {
+          leases: {
+            where: { endDate: null },
+            select: { id: true, tenantName: true, rentAmount: true },
+          },
+        },
+      },
+    },
   });
 
   if (!building || building.orgId !== orgId) throw new NotFoundError();

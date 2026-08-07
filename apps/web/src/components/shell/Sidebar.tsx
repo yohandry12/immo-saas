@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation";
 // dès maintenant, les écrans arrivent en F2.
 export const navItems: { label: string; href: string; ready: boolean }[] = [
   { label: "Tableau de bord", href: "/dashboard", ready: true },
-  { label: "Immeubles", href: "/immeubles", ready: false },
+  { label: "Immeubles", href: "/immeubles", ready: true },
   { label: "Baux", href: "/baux", ready: false },
   { label: "Paiements", href: "/paiement-direct", ready: true },
   { label: "Charges", href: "/charges", ready: false },

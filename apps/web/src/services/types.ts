@@ -20,13 +20,17 @@ export type Unit = {
   label: string;
   rentAmount: number;
   occupants: number;
+  floor?: number | null;
   surfaceM2?: number | null;
+  // Bail actif renvoyé par GET /buildings/:id — occupé si non vide.
+  leases?: { id: string; tenantName: string | null; rentAmount: number }[];
 };
 
 export type Building = {
   id: string;
   name: string;
   city: string;
+  address?: string | null;
   units?: Unit[];
   _count?: { units: number };
 };

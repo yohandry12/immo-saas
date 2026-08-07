@@ -1,5 +1,6 @@
 "use client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { currentPeriod, eventLabel, relativeTime } from "@/lib/activity";
 import { errorMessage } from "@/lib/api";
@@ -93,7 +94,15 @@ export default function DashboardPage() {
         <Card>
           <EmptyState
             title="Votre portefeuille est vide pour l'instant"
-            hint="Créez votre premier immeuble et ses appartements : les loyers, baux et charges apparaîtront ici. L'écran Immeubles arrive très bientôt."
+            hint="Créez votre premier immeuble et ses appartements : les loyers, baux et charges apparaîtront ici."
+            action={
+              <Link
+                href="/immeubles"
+                className="inline-flex h-40 items-center justify-center rounded-lg bg-rausch px-16 text-[14px] font-medium text-white hover:bg-rausch-600"
+              >
+                Créer mon premier immeuble
+              </Link>
+            }
           />
         </Card>
       )}

@@ -14,6 +14,15 @@ export const buildingsService = {
       rentAmount: number;
       occupants?: number;
       surfaceM2?: number;
+      floor?: number;
+      // « Déjà occupé » : le bail en place, créé dans la même transaction.
+      lease?: {
+        tenantName: string;
+        tenantPhone: string;
+        rentAmount?: number;
+        advanceMonths?: number;
+        depositAmount?: number;
+      };
     },
   ) =>
     api.post<Unit>(`/buildings/${buildingId}/units`, body).then((r) => r.data),
