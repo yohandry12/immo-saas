@@ -3,11 +3,10 @@ import { useEffect, useState } from "react";
 import { API_URL } from "./api";
 import { getSession } from "./session";
 
-export type FeedEvent = {
-  type: string;
-  payload: Record<string, unknown>;
-  createdAt: string;
-};
+// Le type vient du contrat partagé : plus de seconde déclaration
+// locale qui divergerait en silence du backend.
+export type { FeedEvent } from "@immo/shared";
+import type { FeedEvent } from "@immo/shared";
 
 // EventSource ne peut pas envoyer Authorization : on lit le flux à la main.
 export function useActivityFeed(enabled: boolean) {

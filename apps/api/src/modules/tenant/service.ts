@@ -1,4 +1,5 @@
 import { prisma } from "@immo/database";
+import type { TenantHomeResponse } from "@immo/shared";
 
 const currentPeriod = () => new Date().toISOString().slice(0, 7);
 
@@ -25,7 +26,9 @@ function covers(
  * les parts de charges envoyées mais pas encore réglées.
  * Scope par identité : tout est filtré sur tenantId, jamais sur une org.
  */
-export async function getTenantHome(tenantId: string) {
+export async function getTenantHome(
+  tenantId: string,
+): Promise<TenantHomeResponse> {
   const period = currentPeriod();
 
   const leases = await prisma.lease.findMany({

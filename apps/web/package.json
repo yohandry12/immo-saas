@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@immo/shared": "workspace:*",
     "@tanstack/react-query": "^5.101.4",
     "axios": "^1.19.0",
     "next": "16.3.0",

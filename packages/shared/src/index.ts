@@ -239,3 +239,176 @@ export type CreateUnitInput = z.infer<typeof CreateUnitSchema>;
 export type LoginInput = z.infer<typeof LoginSchema>;
 export type RegisterInput = z.infer<typeof RegisterSchema>;
 export type TenantRegisterInput = z.infer<typeof TenantRegisterSchema>;
+
+// ---------- Contrats de RÉPONSE de l'API ----------
+// Jusqu'ici ce package ne décrivait que les ENTRÉES (schémas zod des
+// requêtes). Les formes renvoyées par l'API vivaient en double : une
+// fois implicitement dans les services, une fois recopiées à la main
+// dans apps/web. Ces types sont désormais la source unique.
+//
+// Convention : ce sont les formes vues par le CLIENT, APRÈS sérialisation
+// JSON — d'où les dates en `string` et non en `Date`.
+
+/** Rôle d'un membre dans un portefeuille. */
+export type Role = "OWNER" | "MANAGER" | "TENANT";
+
+export type PaymentKind = "RENT" | "CHARGE" | "DEPOSIT";
+export type PaymentMethod = "CASH" | "MOMO" | "ORANGE_MONEY" | "BANK";
+export type PaymentStatus = "PENDING" | "CONFIRMED" | "FAILED";
+export type ChargeRule = "EQUAL" | "BY_AREA" | "BY_OCCUPANTS" | "CUSTOM";
+export type ChargeBillStatus = "DRAFT" | "SENT";
+
+/**
+ * Réponse d'authentification. `org` est renvoyé par /auth/register
+ * (une seule org créée), `orgs` par /auth/login et /auth/me.
+ * Les DEUX sont absents pour un compte locataire : il n'a pas de
+ * portefeuille — d'où l'optionnalité, que le front doit gérer.
+ */
+export type AuthResponse = {
+  token: string;
+  refreshToken?: string;
+  user: {
+    id: string;
+    email?: string | null;
+    firstName: string;
+    lastName: string;
+  };
+  org?: { id: string; name: string };
+  orgs?: { id: string; name: string; role: Role }[];
+};
+
+/** Réponse de POST /auth/tenant/register : aucun bail n'est rattaché
+ * automatiquement — `pendingLeases` compte ceux qui attendent la
+ * confirmation du propriétaire. */
+export type TenantRegisterResponse = {
+  token: string;
+  refreshToken?: string;
+  pendingLeases: number;
+};
+
+export type UnitResponse = {
+  id: string;
+  label: string;
+  rentAmount: number;
+  occupants: number;
+  floor?: number | null;
+  surfaceM2?: number | null;
+  // Bail actif renvoyé par GET /buildings/:id — occupé si non vide.
+  leases?: { id: string; tenantName: string | null; rentAmount: number }[];
+};
+
+export type BuildingResponse = {
+  id: string;
+  name: string;
+  city: string;
+  address?: string | null;
+  units?: UnitResponse[];
+  _count?: { units: number };
+};
+
+export type PaymentResponse = {
+  id: string;
+  kind: PaymentKind;
+  method: PaymentMethod;
+  amount: number;
+  status: PaymentStatus;
+  recordedByName?: string | null;
+  paidAt?: string | null;
+  createdAt?: string;
+  periodFrom?: string | null;
+  periodTo?: string | null;
+  unit?: { label: string };
+};
+
+export type LeaseResponse = {
+  id: string;
+  // null = aucun compte locataire rattaché à ce bail. Le rattachement
+  // est un acte du propriétaire (POST /leases/:id/attach-tenant).
+  tenantId?: string | null;
+  tenantName: string | null;
+  tenantPhone: string | null;
+  rentAmount: number;
+  advanceMonths: number;
+  depositAmount: number | null;
+  startDate: string;
+  endDate: string | null;
+  unit: { label: string; building: { name: string } };
+};
+
+export type ChargeBillResponse = {
+  id: string;
+  buildingId: string;
+  type: string;
+  amount: number;
+  period: string;
+  rule: ChargeRule;
+  status: ChargeBillStatus;
+  createdAt: string;
+  building: { name: string };
+  allocations: {
+    id: string;
+    amount: number;
+    paid: boolean;
+    unit: { label: string };
+  }[];
+};
+
+export type ExpenseResponse = {
+  id: string;
+  buildingId: string;
+  category: string;
+  amount: number;
+  description: string;
+  photos: string[];
+  createdAt: string;
+  building?: { name: string };
+};
+
+export type MemberResponse = {
+  id: string;
+  role: Role;
+  user: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string | null;
+    phone: string | null;
+  };
+};
+
+/** Le « mois en 10 secondes » : ce que le dashboard affiche en haut. */
+export type SummaryResponse = {
+  period: string;
+  expectedRent: number;
+  collectedRent: number;
+  outstandingRent: number;
+  depositsHeld: number;
+  occupancy: { total: number; occupied: number; rate: number };
+  unpaidUnits: { label: string; tenantName: string | null; due: number }[];
+};
+
+/** Événement du flux d'activité (SSE et historique). */
+export type FeedEvent = {
+  type: string;
+  payload: Record<string, unknown>;
+  createdAt: string;
+};
+
+/** Écran d'accueil du locataire : son logement, son mois. */
+export type TenantHomeResponse = {
+  period: string;
+  leases: {
+    id: string;
+    unitLabel: string;
+    buildingName: string;
+    city: string;
+    rentAmount: number;
+    rentPaidForCurrentMonth: boolean;
+    unpaidCharges: {
+      id: string;
+      type: string;
+      period: string;
+      amount: number;
+    }[];
+  }[];
+};
