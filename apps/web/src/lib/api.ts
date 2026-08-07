@@ -1,22 +1,29 @@
 import axios from "axios";
 import { goToLogin } from "./navigation";
-import { clearSession, getSession, setSession } from "./session";
+import {
+  clearSession,
+  getAccessToken,
+  getSession,
+  setAccessToken,
+} from "./session";
 
-export const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api/v1";
+// URL RELATIVE : le navigateur appelle la même origine que la page, et
+// Next (dev) ou le reverse proxy (prod) route vers l'API. C'est ce qui
+// rend le cookie SameSite=Strict utilisable.
+export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "/api/v1";
 
-// Une seule instance configurée pour tout le site.
-export const api = axios.create({ baseURL: API_URL });
+// withCredentials : sans lui, axios n'envoie pas le cookie de refresh
+// sur /auth/refresh et /auth/logout.
+export const api = axios.create({ baseURL: API_URL, withCredentials: true });
 
-// Intercepteur request : clé d'accès + portefeuille injectés une fois,
-// pour tous les appels, sans répétition dans les pages.
 api.interceptors.request.use((config) => {
-  const session = getSession();
-  if (session) {
-    config.headers.Authorization = `Bearer ${session.token}`;
-    // Un compte locataire n'a pas d'org : on n'envoie pas d'en-tête vide.
-    if (session.orgId) config.headers["X-Org-Id"] = session.orgId;
-  }
+  const token = getAccessToken();
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+
+  // Un compte locataire n'a pas d'org : on n'envoie pas d'en-tête vide.
+  const orgId = getSession()?.orgId;
+  if (orgId) config.headers["X-Org-Id"] = orgId;
+
   return config;
 });
 
@@ -27,24 +34,36 @@ api.interceptors.request.use((config) => {
 let refreshing: Promise<string | null> | null = null;
 
 async function tryRefresh(): Promise<string | null> {
-  const session = getSession();
-  if (!session?.refreshToken) return null;
   try {
-    // axios BRUT, pas `api` : l'instance interceptée re-déclencherait
-    // ce même code en boucle sur un 401 du refresh.
-    const r = await axios.post<{ token: string; refreshToken: string }>(
+    // Pas de corps : le cookie httpOnly EST la preuve. axios brut, pas
+    // `api` : l'instance interceptée rejouerait ce code en boucle sur
+    // un 401 du refresh. withCredentials explicite car on court-circuite
+    // l'instance configurée.
+    const r = await axios.post<{ token: string }>(
       `${API_URL}/auth/refresh`,
-      { refreshToken: session.refreshToken },
+      undefined,
+      { withCredentials: true },
     );
-    setSession({ ...session, token: r.data.token, refreshToken: r.data.refreshToken });
+    setAccessToken(r.data.token);
     return r.data.token;
   } catch {
-    return null; // refresh mort : la session est vraiment finie
+    return null; // cookie mort ou absent : la session est finie
   }
 }
 
-// Intercepteur response : 401 → tenter UN refresh puis rejouer la
-// requête. Refresh impossible → session morte → retour login.
+/**
+ * Rôle : restaurer la session après un rechargement de page, où
+ * l'access en mémoire est perdu mais le cookie survit.
+ * Renvoie true si la session est repartie.
+ */
+export async function restoreSession(): Promise<boolean> {
+  if (getAccessToken()) return true;
+  refreshing ??= tryRefresh().finally(() => {
+    refreshing = null;
+  });
+  return (await refreshing) !== null;
+}
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {

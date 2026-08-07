@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { API_URL } from "./api";
-import { getSession } from "./session";
+import { getAccessToken, getSession } from "./session";
 
 // Le type vient du contrat partagé : plus de seconde déclaration
 // locale qui divergerait en silence du backend.
@@ -109,8 +109,12 @@ export function useActivityFeed(enabled: boolean) {
         // il n'existe pas — inutile de réessayer en boucle.
         if (!session?.orgId) return;
 
+        // L'access token vit en mémoire (plus dans la session persistée).
+        const token = getAccessToken();
+        if (!token) return;
+
         try {
-          await connectOnce({ token: session.token, orgId: session.orgId });
+          await connectOnce({ token, orgId: session.orgId });
           // Fin propre du flux (serveur qui ferme) : on repart vite.
           delay = RETRY_MIN_MS;
         } catch {

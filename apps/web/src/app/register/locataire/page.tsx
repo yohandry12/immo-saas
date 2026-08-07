@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { errorMessage } from "@/lib/api";
-import { setSession } from "@/lib/session";
+import { setAccessToken, setSession } from "@/lib/session";
 import { authService } from "@/services/auth.service";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -29,7 +29,9 @@ export default function RegisterLocatairePage() {
     setError("");
     try {
       const d = await authService.registerTenant(form);
-      setSession({ token: d.token, refreshToken: d.refreshToken });
+      setAccessToken(d.token);
+      // Un locataire n'a pas d'organisation : session sans orgId.
+      setSession({});
       router.push("/locataire");
     } catch (err) {
       setError(errorMessage(err));

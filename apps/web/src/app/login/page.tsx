@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { errorMessage } from "@/lib/api";
-import { setSession } from "@/lib/session";
+import { setAccessToken, setSession } from "@/lib/session";
 import { authService } from "@/services/auth.service";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -30,7 +30,8 @@ export default function LoginPage() {
       );
       // Un locataire n'a aucune org : session sans orgId, espace dédié.
       const orgId = d.orgs?.[0]?.id ?? d.org?.id;
-      setSession({ token: d.token, refreshToken: d.refreshToken, orgId });
+      setAccessToken(d.token); // en mémoire, jamais sur disque
+      setSession({ orgId });
       router.push(orgId ? "/dashboard" : "/locataire");
     } catch (err) {
       setError(errorMessage(err));

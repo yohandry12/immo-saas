@@ -1,6 +1,6 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
-import { clearSession, getSession } from "@/lib/session";
+import { clearSession, getSession, signalLogout } from "@/lib/session";
 import { goToLogin } from "@/lib/navigation";
 import { authService } from "@/services/auth.service";
 import { Button } from "@/components/ui/Button";
@@ -16,11 +16,12 @@ export function Topbar() {
 
   async function logout() {
     try {
-      await authService.logout(getSession()?.refreshToken);
+      await authService.logout();
     } catch {
       // Le serveur est injoignable : la session locale meurt quand même.
     }
     clearSession();
+    signalLogout(); // prévient les autres onglets
     goToLogin();
   }
 

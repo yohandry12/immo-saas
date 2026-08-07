@@ -1,7 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { clearSession, getSession, useHasSession } from "@/lib/session";
+import { clearSession, signalLogout, useHasSession } from "@/lib/session";
 import { useIdleLogout } from "@/lib/useIdleLogout";
 import { goToLogin } from "@/lib/navigation";
 import { authService } from "@/services/auth.service";
@@ -27,11 +27,12 @@ export default function TenantLayout({
 
   async function logout() {
     try {
-      await authService.logout(getSession()?.refreshToken);
+      await authService.logout();
     } catch {
       // Le serveur est injoignable : la session locale meurt quand même.
     }
     clearSession();
+    signalLogout();
     goToLogin();
   }
 

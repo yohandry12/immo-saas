@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { errorMessage } from "@/lib/api";
-import { setSession } from "@/lib/session";
+import { setAccessToken, setSession } from "@/lib/session";
 import { authService } from "@/services/auth.service";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -32,11 +32,8 @@ export default function RegisterPage() {
     setError("");
     try {
       const d = await authService.register(form);
-      setSession({
-        token: d.token,
-        refreshToken: d.refreshToken,
-        orgId: d.org!.id,
-      });
+      setAccessToken(d.token);
+      setSession({ orgId: d.org!.id });
       router.push("/dashboard");
     } catch (err) {
       setError(errorMessage(err));

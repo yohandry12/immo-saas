@@ -2,7 +2,7 @@
 import { useEffect } from "react";
 import { api } from "./api";
 import { goToLogin } from "./navigation";
-import { clearSession, getSession } from "./session";
+import { clearSession, signalLogout } from "./session";
 
 // Le navigateur MESURE l'inactivité ; le serveur EXÉCUTE la sentence.
 // 15 minutes sans geste → logout réel (liste noire) puis retour login.
@@ -13,13 +13,14 @@ export function useIdleLogout(enabled: boolean, timeoutMs = 15 * 60 * 1000) {
 
     const fire = () => {
       // Même instance axios que le reste : intercepteurs inclus.
-      // refreshToken envoyé pour que le serveur le révoque AUSSI :
-      // sans lui, la session renaîtrait au prochain refresh.
+      // Aucun paramètre : le cookie httpOnly porte le refresh, que le
+      // serveur révoque avec l'access.
       api
-        .post("/auth/logout", { refreshToken: getSession()?.refreshToken })
+        .post("/auth/logout")
         .catch(() => {})
         .finally(() => {
           clearSession();
+          signalLogout(); // prévient les autres onglets
           goToLogin();
         });
     };
