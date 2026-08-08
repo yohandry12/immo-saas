@@ -263,7 +263,7 @@ export default function PaiementsPage() {
                     <Td>
                       {KINDS[p.kind]}
                       {p.periodFrom && (
-                        <span className="text-[12px] text-foggy">
+                        <span className="text-caption text-foggy">
                           {" "}
                           ({p.periodFrom}
                           {p.periodTo && p.periodTo !== p.periodFrom
@@ -380,7 +380,7 @@ export default function PaiementsPage() {
             />
           </div>
           {formError && (
-            <p className="text-[13px] text-rausch-600">{formError}</p>
+            <p className="text-label text-rausch-600">{formError}</p>
           )}
           <Button type="submit" disabled={record.isPending}>
             {record.isPending ? "Enregistrement…" : "Enregistrer le paiement"}
@@ -396,7 +396,7 @@ export default function PaiementsPage() {
       >
         {momoUrl ? (
           <div className="flex flex-col gap-16">
-            <p className="text-[14px] text-hof">
+            <p className="text-body text-hof">
               Lien de paiement prêt. Envoyez-le au locataire (WhatsApp, SMS) :
               il tape son code PIN, le paiement se confirme tout seul ici.
             </p>
@@ -404,7 +404,7 @@ export default function PaiementsPage() {
               href={momoUrl}
               target="_blank"
               rel="noreferrer"
-              className="break-all rounded-lg bg-faint p-12 text-[13px] text-hof underline"
+              className="break-all rounded-lg bg-faint p-12 text-label text-hof underline"
             >
               {momoUrl}
             </a>
@@ -468,7 +468,7 @@ export default function PaiementsPage() {
               }
             />
             {formError && (
-              <p className="text-[13px] text-rausch-600">{formError}</p>
+              <p className="text-label text-rausch-600">{formError}</p>
             )}
             {/* Rausch : c'est LE moment d'argent de l'écran. */}
             <Button variant="accent" type="submit" disabled={momo.isPending}>

@@ -102,7 +102,7 @@ export default function ImmeubleDetailPage() {
       <div>
         <Link
           href="/immeubles"
-          className="text-[13px] font-medium text-foggy hover:text-hof"
+          className="text-label font-medium text-foggy hover:text-hof"
         >
           ← Tous les immeubles
         </Link>
@@ -112,7 +112,7 @@ export default function ImmeubleDetailPage() {
           <div className="mt-4 flex flex-wrap items-center justify-between gap-12">
             <div>
               <h1 className="text-heading font-bold text-hof">{b.name}</h1>
-              <p className="text-[14px] text-foggy">
+              <p className="text-body text-foggy">
                 {b.city}
                 {b.address ? ` · ${b.address}` : ""}
               </p>
@@ -174,11 +174,11 @@ export default function ImmeubleDetailPage() {
                       <Badge>Vacant</Badge>
                     )}
                   </div>
-                  <p className="text-[14px] tabular-nums text-hof">
+                  <p className="text-body tabular-nums text-hof">
                     {formatFCFA(lease?.rentAmount ?? u.rentAmount)}
                     <span className="text-foggy"> / mois</span>
                   </p>
-                  <p className="min-h-[20px] text-[13px] text-foggy">
+                  <p className="min-h-[20px] text-label text-foggy">
                     {lease
                       ? (lease.tenantName ?? "Locataire sans nom")
                       : u.floor != null
@@ -191,7 +191,7 @@ export default function ImmeubleDetailPage() {
                         setDeleteError("");
                         setToDelete(u);
                       }}
-                      className="rounded-lg px-8 py-4 text-[13px] font-medium text-foggy hover:bg-faint hover:text-rausch-600"
+                      className="rounded-lg px-8 py-4 text-label font-medium text-foggy hover:bg-faint hover:text-rausch-600"
                     >
                       Supprimer
                     </button>
@@ -261,7 +261,7 @@ export default function ImmeubleDetailPage() {
             required
           />
 
-          <label className="flex items-center gap-8 text-[14px] text-hof">
+          <label className="flex items-center gap-8 text-body text-hof">
             <input
               type="checkbox"
               checked={unitForm.occupied}
@@ -324,7 +324,7 @@ export default function ImmeubleDetailPage() {
           )}
 
           {formError && (
-            <p className="text-[13px] text-rausch-600">{formError}</p>
+            <p className="text-label text-rausch-600">{formError}</p>
           )}
           <Button type="submit" disabled={addUnit.isPending}>
             {addUnit.isPending ? "Ajout…" : "Ajouter l'appartement"}
@@ -342,13 +342,13 @@ export default function ImmeubleDetailPage() {
             : `Supprimer ${toDelete?.label ?? ""}`
         }
       >
-        <p className="text-[14px] text-hof">
+        <p className="text-body text-hof">
           {toDelete === "building"
             ? "L'immeuble, ses appartements et leurs baux seront supprimés. Les appartements avec un historique de paiements ne peuvent pas être supprimés : la comptabilité est conservée."
             : "L'appartement et ses baux seront supprimés. S'il porte un historique de paiements, la suppression sera refusée : la comptabilité est conservée."}
         </p>
         {deleteError && (
-          <p className="mt-12 text-[13px] text-rausch-600">{deleteError}</p>
+          <p className="mt-12 text-label text-rausch-600">{deleteError}</p>
         )}
         <div className="mt-24 flex justify-end gap-12">
           <Button variant="ghost" onClick={() => setToDelete(null)}>

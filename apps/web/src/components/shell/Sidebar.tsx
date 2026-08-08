@@ -41,7 +41,7 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
       aria-current={active ? "page" : undefined}
       // État actif à TROIS signaux (fond + graisse/couleur + barre) :
       // un seul bg-faint sur blanc était pratiquement invisible.
-      className={`relative flex min-h-40 items-center gap-12 rounded-lg px-12 py-8 text-[14px] outline-none transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-hof ${
+      className={`relative flex min-h-40 items-center gap-12 rounded-lg px-12 py-8 text-body outline-none transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-hof ${
         active
           ? "bg-faint font-medium text-hof"
           : "text-foggy hover:bg-faint hover:text-hof"
@@ -118,7 +118,7 @@ export function MobileNav() {
               aria-current={active ? "page" : undefined}
               // min-h-44 : cible tactile ≥ 44px (PRODUCT.md), la règle
               // était violée sur l'unique navigation mobile.
-              className={`flex min-h-44 items-center whitespace-nowrap rounded-full px-16 text-[14px] font-medium outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hof ${
+              className={`flex min-h-44 items-center whitespace-nowrap rounded-full px-16 text-body font-medium outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hof ${
                 active ? "bg-hof text-white" : "bg-faint text-foggy"
               }`}
             >

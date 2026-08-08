@@ -39,7 +39,7 @@ export default function ComptePage() {
             <Skeleton className="h-16 w-[45%]" />
           </div>
         ) : u ? (
-          <dl className="flex flex-col gap-8 text-[14px]">
+          <dl className="flex flex-col gap-8 text-body">
             <div className="flex justify-between gap-16">
               <dt className="text-foggy">Nom</dt>
               <dd className="font-medium text-hof">
@@ -60,7 +60,7 @@ export default function ComptePage() {
             ))}
           </dl>
         ) : (
-          <p className="text-[14px] text-foggy">
+          <p className="text-body text-foggy">
             Impossible de charger le profil.
           </p>
         )}
@@ -68,7 +68,7 @@ export default function ComptePage() {
 
       <Card>
         <CardTitle>Supprimer mon compte</CardTitle>
-        <p className="text-[14px] text-foggy">
+        <p className="text-body text-foggy">
           Un propriétaire doit d&apos;abord céder ou fermer ses portefeuilles.
           Les téléphones de vos baux terminés seront effacés ; les écritures
           comptables conservent les noms.
@@ -91,12 +91,12 @@ export default function ComptePage() {
         onClose={() => setDeleteOpen(false)}
         title="Supprimer définitivement mon compte"
       >
-        <p className="text-[14px] text-hof">
+        <p className="text-body text-hof">
           Cette action est irréversible. Votre accès est supprimé
           immédiatement.
         </p>
         {deleteError && (
-          <p className="mt-12 text-[13px] text-rausch-600">{deleteError}</p>
+          <p className="mt-12 text-label text-rausch-600">{deleteError}</p>
         )}
         <div className="mt-24 flex justify-end gap-12">
           <Button variant="ghost" onClick={() => setDeleteOpen(false)}>

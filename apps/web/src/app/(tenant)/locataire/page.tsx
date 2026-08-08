@@ -83,7 +83,7 @@ export default function LocatairePage() {
               <p className="text-ui font-semibold text-hof">
                 {l.buildingName} · {l.unitLabel}
               </p>
-              <p className="text-[13px] text-foggy">{l.city}</p>
+              <p className="text-label text-foggy">{l.city}</p>
             </div>
             {l.rentPaidForCurrentMonth ? (
               <Badge tone="success">Loyer {home.data.period} payé</Badge>
@@ -91,7 +91,7 @@ export default function LocatairePage() {
               <Badge tone="warning">Loyer {home.data.period} à payer</Badge>
             )}
           </div>
-          <p className="text-[14px] text-hof">
+          <p className="text-body text-hof">
             Loyer mensuel :{" "}
             <span className="font-semibold tabular-nums">
               {formatFCFA(l.rentAmount)}
@@ -99,14 +99,14 @@ export default function LocatairePage() {
           </p>
           {l.unpaidCharges.length > 0 && (
             <div className="rounded-lg bg-faint p-12">
-              <p className="mb-8 text-[13px] font-medium text-hof">
+              <p className="mb-8 text-label font-medium text-hof">
                 Charges à régler
               </p>
               <ul className="flex flex-col gap-4">
                 {l.unpaidCharges.map((c) => (
                   <li
                     key={c.id}
-                    className="flex justify-between text-[14px] text-hof"
+                    className="flex justify-between text-body text-hof"
                   >
                     <span>
                       {CHARGE_TYPES[c.type] ?? c.type} · {c.period}
@@ -125,7 +125,7 @@ export default function LocatairePage() {
       <section aria-labelledby="titre-recus">
         <h2
           id="titre-recus"
-          className="mb-12 text-heading-sm font-medium tracking-[-0.02em] text-hof"
+          className="mb-12 text-heading-sm font-medium text-hof"
         >
           Mes reçus
         </h2>

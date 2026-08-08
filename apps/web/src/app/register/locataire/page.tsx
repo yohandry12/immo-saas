@@ -49,7 +49,7 @@ export default function RegisterLocatairePage() {
         <h2 className="text-subheading font-semibold text-hof mb-4">
           Compte locataire
         </h2>
-        <p className="text-[14px] text-foggy mb-24">
+        <p className="text-body text-foggy mb-24">
           Utilisez le numéro de téléphone donné à votre propriétaire : c&apos;est
           lui qui confirmera le rattachement à votre bail.
         </p>
@@ -86,13 +86,13 @@ export default function RegisterLocatairePage() {
             onChange={set("password")}
             required
           />
-          {error && <p className="text-[13px] text-rausch-600">{error}</p>}
+          {error && <p className="text-label text-rausch-600">{error}</p>}
           <Button variant="accent" type="submit" disabled={busy}>
             {busy ? "Création…" : "Créer mon compte"}
           </Button>
         </form>
       </Card>
-      <p className="text-[14px] text-foggy">
+      <p className="text-body text-foggy">
         Déjà un compte ?{" "}
         <Link href="/login" className="font-medium text-hof hover:underline">
           Me connecter

@@ -31,7 +31,7 @@ export function Topbar() {
           {org?.name ?? "…"}
         </span>
         {data?.user && (
-          <span className="text-[13px] text-foggy">
+          <span className="text-label text-foggy">
             {data.user.firstName} {data.user.lastName}
           </span>
         )}
@@ -41,7 +41,7 @@ export function Topbar() {
           contrasté de la barre, à l'inverse de sa hiérarchie réelle. */}
       <button
         onClick={logout}
-        className="rounded-lg px-12 py-8 text-[13px] font-medium text-foggy outline-none transition-colors hover:bg-faint hover:text-hof focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hof"
+        className="rounded-lg px-12 py-8 text-label font-medium text-foggy outline-none transition-colors hover:bg-faint hover:text-hof focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hof"
       >
         Déconnexion
       </button>

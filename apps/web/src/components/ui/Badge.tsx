@@ -18,7 +18,7 @@ export function Badge({
 }: HTMLAttributes<HTMLSpanElement> & { tone?: Tone }) {
   return (
     <span
-      className={`inline-flex items-center rounded-full px-12 py-4 text-[12px] font-semibold ${tones[tone]} ${className}`}
+      className={`inline-flex items-center rounded-full px-12 py-4 text-caption font-semibold ${tones[tone]} ${className}`}
       {...props}
     />
   );

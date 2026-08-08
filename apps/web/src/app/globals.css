@@ -25,6 +25,14 @@
   /* Typography — Scale */
   --text-caption: 11px;
   --text-caption--line-height: 1.18;
+  /* label 13px : la taille la plus utilisée du produit (libellés,
+     en-têtes de tableau, méta) — elle vivait en text-[13px] arbitraire
+     dans chaque écran au lieu d'exister dans le système. */
+  --text-label: 13px;
+  --text-label--line-height: 1.25;
+  /* body 14px : le corps du contenu, aligné sur le body global. */
+  --text-body: 14px;
+  --text-body--line-height: 1.43;
   --text-ui: 16px;
   --text-ui--line-height: 1.25;
   --text-subheading: 20px;
@@ -33,8 +41,12 @@
   --text-heading-sm: 22px;
   --text-heading-sm--line-height: 1.18;
   --text-heading-sm--letter-spacing: -0.44px;
+  /* heading : interlignage de TITRE (1.15), pas de corps — l'ancien
+     1.43 hérité du body faisait flotter le chiffre héros dans 40px de
+     ligne. Tracking resserré comme les autres grandes tailles. */
   --text-heading: 28px;
-  --text-heading--line-height: 1.43;
+  --text-heading--line-height: 1.15;
+  --text-heading--letter-spacing: -0.6px;
 
   /* Spacing — px vrais (p-4 = 4px), échelle du design */
   --spacing-4: 4px;

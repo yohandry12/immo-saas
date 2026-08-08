@@ -167,7 +167,7 @@ export default function BauxPage() {
       )}
 
       {attachFeedback && (
-        <p role="status" className="text-[13px] text-foggy">
+        <p role="status" className="text-label text-foggy">
           {attachFeedback}
         </p>
       )}
@@ -194,7 +194,7 @@ export default function BauxPage() {
                   <Td>
                     {l.tenantName ?? "—"}
                     {l.tenantPhone && (
-                      <span className="block text-[12px] text-foggy">
+                      <span className="block text-caption text-foggy">
                         {l.tenantPhone}
                       </span>
                     )}
@@ -220,7 +220,7 @@ export default function BauxPage() {
                           attach.mutate(l.id);
                         }}
                         disabled={attach.isPending}
-                        className="rounded-lg px-8 py-4 text-[13px] font-medium text-foggy hover:bg-faint hover:text-hof"
+                        className="rounded-lg px-8 py-4 text-label font-medium text-foggy hover:bg-faint hover:text-hof"
                       >
                         Rattacher le compte
                       </button>
@@ -231,7 +231,7 @@ export default function BauxPage() {
                           setTerminateError("");
                           setToTerminate(l);
                         }}
-                        className="rounded-lg px-8 py-4 text-[13px] font-medium text-foggy hover:bg-faint hover:text-rausch-600"
+                        className="rounded-lg px-8 py-4 text-label font-medium text-foggy hover:bg-faint hover:text-rausch-600"
                       >
                         Résilier
                       </button>
@@ -273,7 +273,7 @@ export default function BauxPage() {
             ))}
           </Select>
           {buildings.isSuccess && vacantUnits.length === 0 && (
-            <p className="text-[13px] text-foggy">
+            <p className="text-label text-foggy">
               Aucun appartement vacant : tous portent déjà un bail actif.
             </p>
           )}
@@ -326,7 +326,7 @@ export default function BauxPage() {
             />
           </div>
           {formError && (
-            <p className="text-[13px] text-rausch-600">{formError}</p>
+            <p className="text-label text-rausch-600">{formError}</p>
           )}
           <Button type="submit" disabled={create.isPending}>
             {create.isPending ? "Signature…" : "Signer le bail"}
@@ -340,13 +340,13 @@ export default function BauxPage() {
         onClose={() => setToTerminate(null)}
         title={`Résilier le bail de ${toTerminate?.unit.label ?? ""}`}
       >
-        <p className="text-[14px] text-hof">
+        <p className="text-body text-hof">
           Le bail de {toTerminate?.tenantName ?? "ce locataire"} prend fin
           aujourd&apos;hui. L&apos;appartement redevient vacant ;
           l&apos;historique des paiements est conservé.
         </p>
         {terminateError && (
-          <p className="mt-12 text-[13px] text-rausch-600">{terminateError}</p>
+          <p className="mt-12 text-label text-rausch-600">{terminateError}</p>
         )}
         <div className="mt-24 flex justify-end gap-12">
           <Button variant="ghost" onClick={() => setToTerminate(null)}>

@@ -46,7 +46,7 @@ export default function LoginPage() {
         <h2 className="text-subheading font-semibold text-hof mb-4">
           Connexion
         </h2>
-        <p className="text-[14px] text-foggy mb-24">
+        <p className="text-body text-foggy mb-24">
           Retrouvez vos immeubles, où que vous soyez.
         </p>
         <form onSubmit={submit} className="flex flex-col gap-16">
@@ -67,13 +67,13 @@ export default function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
             required
           />
-          {error && <p className="text-[13px] text-rausch-600">{error}</p>}
+          {error && <p className="text-label text-rausch-600">{error}</p>}
           <Button variant="accent" type="submit" disabled={busy}>
             {busy ? "Connexion…" : "Me connecter"}
           </Button>
         </form>
       </Card>
-      <p className="text-[14px] text-foggy">
+      <p className="text-body text-foggy">
         Pas encore de compte ?{" "}
         <Link href="/register" className="font-medium text-hof hover:underline">
           Créer mon portefeuille

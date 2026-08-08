@@ -68,14 +68,14 @@ export default function DashboardPage() {
     <div className="mx-auto flex w-full max-w-[1040px] flex-col gap-24">
       <div className="flex flex-wrap items-center justify-between gap-12">
         <h1 className="text-heading font-bold text-hof">Tableau de bord</h1>
-        <label className="flex items-center gap-8 text-[13px] font-medium text-foggy">
+        <label className="flex items-center gap-8 text-label font-medium text-foggy">
           Mois
           <input
             type="month"
             value={period}
             max={currentPeriod()}
             onChange={(e) => e.target.value && setPeriod(e.target.value)}
-            className="h-40 rounded-lg border border-bebe bg-white px-12 text-[14px] text-hof focus:border-hof focus:outline-none"
+            className="h-40 rounded-lg border border-bebe bg-white px-12 text-body text-hof focus:border-hof focus:outline-none"
           />
         </label>
       </div>
@@ -108,7 +108,7 @@ export default function DashboardPage() {
             action={
               <Link
                 href="/immeubles"
-                className="inline-flex h-40 items-center justify-center rounded-lg bg-rausch px-16 text-[14px] font-medium text-white hover:bg-rausch-600"
+                className="inline-flex h-40 items-center justify-center rounded-lg bg-rausch px-16 text-body font-medium text-white hover:bg-rausch-600"
               >
                 Créer mon premier immeuble
               </Link>
@@ -121,7 +121,7 @@ export default function DashboardPage() {
         <>
           {/* ---- Le mois : l'élément héroïque ---- */}
           <Card className="p-24">
-            <p className="text-[13px] font-medium text-foggy">
+            <p className="text-label font-medium text-foggy">
               Loyers encaissés
             </p>
             <p className="mt-4 text-heading font-bold text-hof">
@@ -150,7 +150,7 @@ export default function DashboardPage() {
                 style={{ width: `${Math.min(rate, 1) * 100}%` }}
               />
             </div>
-            <p className="mt-16 text-[14px] text-foggy">
+            <p className="mt-16 text-body text-foggy">
               {s.outstandingRent > 0 ? (
                 <>
                   Reste dû :{" "}
@@ -180,7 +180,7 @@ export default function DashboardPage() {
             <section aria-labelledby="titre-impayes">
               <h2
                 id="titre-impayes"
-                className="mb-12 text-heading-sm font-medium tracking-[-0.02em] text-hof"
+                className="mb-12 text-heading-sm font-medium text-hof"
               >
                 Loyers en attente
               </h2>
@@ -220,7 +220,7 @@ export default function DashboardPage() {
             <section aria-labelledby="titre-activite">
               <h2
                 id="titre-activite"
-                className="mb-12 flex items-center gap-8 text-heading-sm font-medium tracking-[-0.02em] text-hof"
+                className="mb-12 flex items-center gap-8 text-heading-sm font-medium text-hof"
               >
                 Activité
                 <span className="flex items-center gap-4 text-caption font-semibold text-foggy">
@@ -252,8 +252,8 @@ export default function DashboardPage() {
                           i === 0 && live.length > 0 ? "animate-feed-in" : ""
                         }`}
                       >
-                        <p className="text-[14px] text-hof">{eventLabel(e)}</p>
-                        <p className="mt-4 text-[12px] text-foggy">
+                        <p className="text-body text-hof">{eventLabel(e)}</p>
+                        <p className="mt-4 text-caption text-foggy">
                           {relativeTime(e.createdAt)}
                         </p>
                       </li>

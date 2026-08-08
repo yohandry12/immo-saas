@@ -79,7 +79,7 @@ export default function TenantLayout({
       <div className="flex min-h-screen items-center justify-center">
         <div className="flex flex-col items-center gap-8">
           <Skeleton className="h-32 w-32 rounded-full" />
-          <p className="text-[14px] text-foggy">Chargement…</p>
+          <p className="text-body text-foggy">Chargement…</p>
         </div>
       </div>
     );

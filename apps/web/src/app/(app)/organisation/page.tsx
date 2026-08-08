@@ -118,7 +118,7 @@ export default function OrganisationPage() {
                   <p className="truncate text-ui font-medium text-hof">
                     {m.user.firstName} {m.user.lastName}
                   </p>
-                  <p className="truncate text-[13px] text-foggy">
+                  <p className="truncate text-label text-foggy">
                     {m.user.email ?? m.user.phone ?? ""}
                   </p>
                 </div>
@@ -132,7 +132,7 @@ export default function OrganisationPage() {
                         setRevokeError("");
                         setToRevoke(m);
                       }}
-                      className="rounded-lg px-8 py-4 text-[13px] font-medium text-foggy hover:bg-faint hover:text-rausch-600"
+                      className="rounded-lg px-8 py-4 text-label font-medium text-foggy hover:bg-faint hover:text-rausch-600"
                     >
                       Retirer
                     </button>
@@ -156,7 +156,7 @@ export default function OrganisationPage() {
           }}
           className="flex flex-col gap-16"
         >
-          <p className="text-[14px] text-foggy">
+          <p className="text-body text-foggy">
             Le gestionnaire sur place pourra enregistrer les paiements,
             déclarer les dépenses et gérer les baux de ce portefeuille.
           </p>
@@ -203,7 +203,7 @@ export default function OrganisationPage() {
             required
           />
           {formError && (
-            <p className="text-[13px] text-rausch-600">{formError}</p>
+            <p className="text-label text-rausch-600">{formError}</p>
           )}
           <Button type="submit" disabled={invite.isPending}>
             {invite.isPending ? "Création…" : "Créer le compte gestionnaire"}
@@ -216,13 +216,13 @@ export default function OrganisationPage() {
         onClose={() => setToRevoke(null)}
         title={`Retirer ${toRevoke?.user.firstName ?? ""} ${toRevoke?.user.lastName ?? ""}`}
       >
-        <p className="text-[14px] text-hof">
+        <p className="text-body text-hof">
           Cette personne perdra l&apos;accès au portefeuille. Les paiements
           qu&apos;elle a enregistrés gardent son nom : la comptabilité ne
           change pas.
         </p>
         {revokeError && (
-          <p className="mt-12 text-[13px] text-rausch-600">{revokeError}</p>
+          <p className="mt-12 text-label text-rausch-600">{revokeError}</p>
         )}
         <div className="mt-24 flex justify-end gap-12">
           <Button variant="ghost" onClick={() => setToRevoke(null)}>

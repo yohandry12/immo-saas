@@ -48,7 +48,7 @@ export default function RegisterPage() {
         <h2 className="text-subheading font-semibold text-hof mb-4">
           Créer mon compte
         </h2>
-        <p className="text-[14px] text-foggy mb-24">
+        <p className="text-body text-foggy mb-24">
           Votre portefeuille d&apos;immeubles, géré depuis n&apos;importe où.
         </p>
         <form onSubmit={submit} className="flex flex-col gap-16">
@@ -90,13 +90,13 @@ export default function RegisterPage() {
             onChange={set("orgName")}
             required
           />
-          {error && <p className="text-[13px] text-rausch-600">{error}</p>}
+          {error && <p className="text-label text-rausch-600">{error}</p>}
           <Button variant="accent" type="submit" disabled={busy}>
             {busy ? "Création…" : "Créer mon portefeuille"}
           </Button>
         </form>
       </Card>
-      <p className="text-[14px] text-foggy">
+      <p className="text-body text-foggy">
         Déjà un compte ?{" "}
         <Link href="/login" className="font-medium text-hof hover:underline">
           Me connecter

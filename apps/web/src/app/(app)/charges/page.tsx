@@ -149,7 +149,7 @@ export default function ChargesPage() {
                 <p className="text-ui font-semibold text-hof">
                   {TYPES[bill.type] ?? bill.type} · {bill.building.name}
                 </p>
-                <p className="text-[13px] text-foggy">
+                <p className="text-label text-foggy">
                   {bill.period} · {RULES[bill.rule]} ·{" "}
                   <span className="tabular-nums">
                     {formatFCFA(bill.amount)}
@@ -205,12 +205,12 @@ export default function ChargesPage() {
                             })
                           }
                           disabled={markPaid.isPending}
-                          className="rounded-lg px-8 py-4 text-[13px] font-medium text-hof underline hover:bg-faint"
+                          className="rounded-lg px-8 py-4 text-label font-medium text-hof underline hover:bg-faint"
                         >
                           Marquer payée
                         </button>
                       ) : (
-                        <span className="text-[13px] text-foggy">—</span>
+                        <span className="text-label text-foggy">—</span>
                       )}
                     </Td>
                   </Tr>
@@ -288,12 +288,12 @@ export default function ChargesPage() {
             <option value="BY_AREA">Proportionnelle à la surface</option>
             <option value="BY_OCCUPANTS">Proportionnelle aux occupants</option>
           </Select>
-          <p className="text-[13px] text-foggy">
+          <p className="text-label text-foggy">
             La facture reste en brouillon : vérifiez la répartition, puis
             envoyez-la. Une fois envoyée, les parts sont figées.
           </p>
           {formError && (
-            <p className="text-[13px] text-rausch-600">{formError}</p>
+            <p className="text-label text-rausch-600">{formError}</p>
           )}
           <Button type="submit" disabled={create.isPending}>
             {create.isPending ? "Création…" : "Créer le brouillon"}
@@ -307,7 +307,7 @@ export default function ChargesPage() {
         onClose={() => setToSend(null)}
         title="Envoyer la facture aux locataires"
       >
-        <p className="text-[14px] text-hof">
+        <p className="text-body text-hof">
           La répartition ci-dessous sera figée définitivement : ce qui est
           réclamé à chaque locataire ne changera plus, même si la facture est
           modifiée ensuite.
@@ -316,7 +316,7 @@ export default function ChargesPage() {
           {toSend?.allocations.map((a) => (
             <li
               key={a.id}
-              className="flex justify-between py-4 text-[14px] text-hof"
+              className="flex justify-between py-4 text-body text-hof"
             >
               <span>{a.unit.label}</span>
               <span className="font-medium tabular-nums">
@@ -326,7 +326,7 @@ export default function ChargesPage() {
           ))}
         </ul>
         {sendError && (
-          <p className="mt-12 text-[13px] text-rausch-600">{sendError}</p>
+          <p className="mt-12 text-label text-rausch-600">{sendError}</p>
         )}
         <div className="mt-24 flex justify-end gap-12">
           <Button variant="ghost" onClick={() => setToSend(null)}>

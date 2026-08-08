@@ -98,7 +98,7 @@ export default function DepensesPage() {
           ))}
         </Select>
         {list.length > 0 && (
-          <p className="text-[14px] text-foggy">
+          <p className="text-body text-foggy">
             Total :{" "}
             <span className="font-semibold tabular-nums text-hof">
               {formatFCFA(total)}
@@ -230,12 +230,12 @@ export default function DepensesPage() {
             }
             required
           />
-          <p className="text-[13px] text-foggy">
+          <p className="text-label text-foggy">
             Les photos des travaux arrivent bientôt : en attendant, décrivez
             précisément la dépense.
           </p>
           {formError && (
-            <p className="text-[13px] text-rausch-600">{formError}</p>
+            <p className="text-label text-rausch-600">{formError}</p>
           )}
           <Button type="submit" disabled={create.isPending}>
             {create.isPending ? "Déclaration…" : "Déclarer la dépense"}

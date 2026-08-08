@@ -8,7 +8,7 @@ export function Table({
 }: HTMLAttributes<HTMLTableElement>) {
   return (
     <div className="overflow-x-auto">
-      <table className={`w-full text-left text-[14px] ${className}`} {...props} />
+      <table className={`w-full text-left text-body ${className}`} {...props} />
     </div>
   );
 }
@@ -19,7 +19,7 @@ export function Th({
 }: ThHTMLAttributes<HTMLTableCellElement>) {
   return (
     <th
-      className={`py-8 px-12 text-[13px] font-medium text-foggy border-b border-bebe ${className}`}
+      className={`py-8 px-12 text-label font-medium text-foggy border-b border-bebe ${className}`}
       {...props}
     />
   );

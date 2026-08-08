@@ -98,12 +98,12 @@ export default function ImmeublesPage() {
                     <span className="block truncate text-ui font-medium text-hof">
                       {b.name}
                     </span>
-                    <span className="mt-4 block text-[13px] text-foggy">
+                    <span className="mt-4 block text-label text-foggy">
                       {b.city}
                       {b.address ? ` · ${b.address}` : ""}
                     </span>
                   </span>
-                  <span className="shrink-0 text-[14px] tabular-nums text-foggy">
+                  <span className="shrink-0 text-body tabular-nums text-foggy">
                     {b._count?.units ?? 0}{" "}
                     {(b._count?.units ?? 0) > 1 ? "appartements" : "appartement"}
                   </span>
@@ -149,7 +149,7 @@ export default function ImmeublesPage() {
             }
           />
           {formError && (
-            <p className="text-[13px] text-rausch-600">{formError}</p>
+            <p className="text-label text-rausch-600">{formError}</p>
           )}
           <Button type="submit" disabled={create.isPending}>
             {create.isPending ? "Création…" : "Créer l'immeuble"}
