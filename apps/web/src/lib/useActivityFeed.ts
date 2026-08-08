@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { API_URL } from "./api";
+import { API_URL, forceRefresh } from "./api";
 import { getAccessToken, getSession } from "./session";
 
 // Le type vient du contrat partagé : plus de seconde déclaration
@@ -99,6 +99,11 @@ export function useActivityFeed(enabled: boolean) {
 
     (async () => {
       let delay = RETRY_MIN_MS;
+      // Le tour précédent a-t-il échoué (401, coupure...) ? Si oui, le
+      // jeton en mémoire est suspect et doit être renouvelé avant de
+      // rouvrir le flux — sinon on rouvre avec le même jeton mort et
+      // on tape 401 indéfiniment (le direct meurt en silence).
+      let needsFreshToken = false;
 
       // Boucle de vie du flux : tant que le composant est monté, on
       // reste connecté. Sans elle, la première coupure réseau tuait
@@ -109,17 +114,28 @@ export function useActivityFeed(enabled: boolean) {
         // il n'existe pas — inutile de réessayer en boucle.
         if (!session?.orgId) return;
 
-        // L'access token vit en mémoire (plus dans la session persistée).
-        const token = getAccessToken();
-        if (!token) return;
+        // L'access token vit en mémoire (plus dans la session persistée,
+        // qui le rafraîchissait naturellement à chaque rotation). Ici,
+        // un jeton absent ou suspecté expiré doit être renouvelé de
+        // force : sinon, soit la boucle rouvre avec un jeton mort et
+        // martèle l'API en boucle, soit elle abandonne définitivement
+        // alors que la session est toujours valide côté cookie.
+        let token = getAccessToken();
+        if (!token || needsFreshToken) {
+          token = await forceRefresh();
+          if (!token) return; // cookie mort : la session est vraiment finie
+        }
 
         try {
           await connectOnce({ token, orgId: session.orgId });
           // Fin propre du flux (serveur qui ferme) : on repart vite.
           delay = RETRY_MIN_MS;
+          needsFreshToken = false;
         } catch {
-          // Coupure réseau, proxy, ou API indisponible : on espace.
+          // Coupure réseau, proxy, ou API indisponible (401 inclus) :
+          // on espace, et on renouvellera le jeton au prochain tour.
           delay = Math.min(delay * 2, RETRY_MAX_MS);
+          needsFreshToken = true;
         }
 
         setConnected(false);

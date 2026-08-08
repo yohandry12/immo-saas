@@ -40,6 +40,18 @@ const refreshLimiter = rateLimit({
   message: { error: "Trop de requêtes. Réessayez plus tard." },
 });
 
+// Cette route n'exige plus d'access token valide (voir le commentaire de
+// /logout) : sans plafond, n'importe qui pourrait marteler Redis, dont
+// dépend requireAuth en fail-closed — saturer Redis mettrait toute l'API
+// hors service. Limite large : un client légitime se déconnecte une fois.
+const logoutLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 60,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: { error: "Trop de requêtes. Réessayez plus tard." },
+});
+
 /**
  * @openapi
  * /auth/register:
@@ -199,27 +211,22 @@ authRouter.post("/tenant/register", registerLimiter, authController.registerTena
  *     summary: Renouveler ma clé d'accès
  *     description: >
  *       Votre clé d'accès expire toutes les 15 minutes. Cette opération
- *       l'échange contre une nouvelle, grâce au « jeton de renouvellement »
- *       reçu à la connexion. Chaque jeton de renouvellement ne sert qu'une
- *       seule fois : vous en recevez un nouveau à chaque échange.
+ *       l'échange contre une nouvelle. Aucun corps à envoyer : le jeton de
+ *       renouvellement voyage dans un cookie httpOnly (immo_refresh), posé
+ *       à la connexion et envoyé automatiquement par le navigateur — il
+ *       n'est jamais accessible en JavaScript ni manipulé par le client.
+ *       La réponse ne contient que la nouvelle clé d'accès ; le cookie est
+ *       renouvelé par rotation à chaque appel : l'ancien jeton de
+ *       renouvellement ne sert plus qu'une seule fois.
  *     tags:
  *       - Authentification
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required: [refreshToken]
- *             properties:
- *               refreshToken:
- *                 type: string
- *                 description: Le jeton de renouvellement reçu à la connexion.
  *     responses:
  *       200:
- *         description: Nouvelle paire de jetons.
+ *         description: Nouvelle clé d'accès.
  *       401:
- *         description: Jeton inconnu, déjà utilisé ou expiré — reconnectez-vous.
+ *         description: >
+ *           Cookie de renouvellement absent, inconnu, déjà utilisé ou
+ *           expiré — reconnectez-vous.
  */
 authRouter.post("/refresh", refreshLimiter, authController.refresh);
 
@@ -256,18 +263,18 @@ authRouter.delete("/me", requireAuth, authController.deleteMe);
  *   post:
  *     summary: Me déconnecter
  *     description: >
- *       Tue la clé d'accès en cours, même si sa date d'expiration est
- *       lointaine : elle est inscrite sur une liste noire jusqu'à son
- *       expiration naturelle. Vos autres appareils restent connectés.
+ *       Révoque votre jeton de renouvellement (via le cookie httpOnly) :
+ *       il ne pourra plus servir à obtenir de nouvelles clés d'accès.
+ *       L'en-tête `Authorization: Bearer` est facultatif ; si vous en
+ *       fournissez une valide, votre clé d'accès en cours est aussi mise
+ *       sur liste noire jusqu'à son expiration naturelle. Vos autres
+ *       appareils restent connectés. Répond toujours 204, que le cookie
+ *       ou la clé d'accès aient été présents ou non.
  *     tags:
  *       - Authentification
- *     security:
- *       - bearerAuth: []
  *     responses:
  *       204:
  *         description: Déconnecté.
- *       401:
- *         description: Clé d'accès absente ou déjà morte.
  */
 // PAS de requireAuth : l'access vit désormais en mémoire et disparaît
 // au rechargement de page. Exiger un access valide rendrait le logout
@@ -275,4 +282,4 @@ authRouter.delete("/me", requireAuth, authController.deleteMe);
 // donc la session réellement vivante. Le controller révoque ce qu'il
 // peut : le refresh (par le cookie) toujours, l'access seulement si un
 // jeton exploitable accompagne la requête.
-authRouter.post("/logout", authController.logout);
+authRouter.post("/logout", logoutLimiter, authController.logout);

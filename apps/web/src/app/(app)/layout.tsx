@@ -2,11 +2,17 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { restoreSession } from "@/lib/api";
-import { clearSession, onLogoutSignal, useHasSession } from "@/lib/session";
+import {
+  clearSession,
+  onLogoutSignal,
+  signalLogout,
+  useHasSession,
+} from "@/lib/session";
 import { useIdleLogout } from "@/lib/useIdleLogout";
 import { goToLogin } from "@/lib/navigation";
 import { MobileNav, Sidebar } from "@/components/shell/Sidebar";
 import { Topbar } from "@/components/shell/Topbar";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 // Coquille des écrans connectés : garde de session + sidebar + topbar.
 // useHasSession est hydration-safe : le serveur rend « pas de session »
@@ -32,7 +38,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     restoreSession().then((ok) => {
       if (cancelled) return;
       if (!ok) {
-        // Le cookie est mort : session finie, retour au login.
+        // Le cookie est mort : session finie, retour au login. On
+        // prévient les autres onglets, sinon un onglet resté ouvert
+        // continuerait d'afficher ses données jusqu'à sa propre
+        // expiration d'access.
+        signalLogout();
         clearSession();
         router.replace("/login");
         return;
@@ -55,7 +65,22 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   useIdleLogout(ready);
 
-  if (!hasSession || !ready) return null;
+  // hasSession null (hydratation en cours) ou false (redirection déjà
+  // déclenchée) : ne rien afficher est correct. hasSession true mais
+  // pas encore ready : le refresh silencieux est en cours (et peut
+  // prendre jusqu'à 15 s sur un réseau lent) — il faut un indicateur
+  // visible, sinon l'écran reste blanc sans explication.
+  if (hasSession === null || hasSession === false) return null;
+  if (!ready) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="flex flex-col items-center gap-8">
+          <Skeleton className="h-32 w-32 rounded-full" />
+          <p className="text-[14px] text-foggy">Chargement…</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen">

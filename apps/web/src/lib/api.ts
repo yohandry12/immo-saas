@@ -5,6 +5,7 @@ import {
   getAccessToken,
   getSession,
   setAccessToken,
+  signalLogout,
 } from "./session";
 
 // URL RELATIVE : le navigateur appelle la même origine que la page, et
@@ -12,9 +13,18 @@ import {
 // rend le cookie SameSite=Strict utilisable.
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "/api/v1";
 
+// Sans timeout, une requête pendante (réseau mobile qui ne répond
+// jamais) bloque indéfiniment l'écran de restauration : ready ne
+// passe jamais à true et l'utilisateur reste sur un écran vide.
+const REQUEST_TIMEOUT_MS = 15_000;
+
 // withCredentials : sans lui, axios n'envoie pas le cookie de refresh
 // sur /auth/refresh et /auth/logout.
-export const api = axios.create({ baseURL: API_URL, withCredentials: true });
+export const api = axios.create({
+  baseURL: API_URL,
+  withCredentials: true,
+  timeout: REQUEST_TIMEOUT_MS,
+});
 
 api.interceptors.request.use((config) => {
   const token = getAccessToken();
@@ -42,7 +52,7 @@ async function tryRefresh(): Promise<string | null> {
     const r = await axios.post<{ token: string }>(
       `${API_URL}/auth/refresh`,
       undefined,
-      { withCredentials: true },
+      { withCredentials: true, timeout: REQUEST_TIMEOUT_MS },
     );
     setAccessToken(r.data.token);
     return r.data.token;
@@ -62,6 +72,23 @@ export async function restoreSession(): Promise<boolean> {
     refreshing = null;
   });
   return (await refreshing) !== null;
+}
+
+/**
+ * Rôle : forcer le renouvellement de l'access token, même si un jeton
+ * est déjà en mémoire — cas du flux SSE de longue durée, dont le jeton
+ * expire pendant que la connexion reste ouverte.
+ * Contrairement à restoreSession(), ne se contente pas d'un jeton présent :
+ * un jeton présent mais expiré doit être remplacé.
+ * Partage la promesse single-flight : plusieurs appels concurrents ne
+ * déclenchent qu'un seul /auth/refresh, dont la rotation invaliderait
+ * sinon les autres.
+ */
+export async function forceRefresh(): Promise<string | null> {
+  refreshing ??= tryRefresh().finally(() => {
+    refreshing = null;
+  });
+  return refreshing;
 }
 
 api.interceptors.response.use(
@@ -92,6 +119,11 @@ api.interceptors.response.use(
         }
       }
 
+      // Prévient les AUTRES onglets : sans ça, un onglet B resterait
+      // affiché avec ses données visibles après l'expiration côté
+      // serveur (poste partagé), pendant que l'onglet A retourne au
+      // login.
+      signalLogout();
       clearSession();
       goToLogin();
     }
