@@ -11,6 +11,7 @@ import type { FeedEvent } from "@/services/types";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Skeleton, EmptyState } from "@/components/ui/Skeleton";
+import { Sparkline } from "@/components/ui/Sparkline";
 
 // Ancienneté du retard : nommer l'urgence. Un retard de 2 jours et de
 // 2 mois ne se traitent pas pareil — le tableau plat les montrait
@@ -218,6 +219,11 @@ export default function DashboardPage() {
                 <span className="font-medium text-hof">{verdict.text}</span>
               </p>
             )}
+
+            {/* La tendance : 6 mois d'encaissements. Répond à « le mois
+                est-il bon ? » par comparaison, ce qu'aucun chiffre isolé
+                ne fait. */}
+            <Sparkline data={s.trend} />
 
             {/* Trois faits de natures différentes : trois blocs, plus la
                 phrase à points médians qui forçait à segmenter soi-même. */}

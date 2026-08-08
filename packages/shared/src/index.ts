@@ -400,6 +400,10 @@ export type SummaryResponse = {
     collectedRent: number; // encaissé cumulé au même jour, mois -1
     expectedRent: number; // attendu du mois -1 (dénominateur du taux)
   };
+  // Encaissements des 6 derniers mois (le mois demandé inclus, en
+  // dernier). Un sparkline sous le héros : la tendance répond à « le mois
+  // est-il bon ? » là où un chiffre isolé ne le peut pas.
+  trend: { period: string; collectedRent: number }[];
 };
 
 /** Événement du flux d'activité (SSE et historique). */

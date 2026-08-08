@@ -120,6 +120,22 @@ export async function getSummary(orgId: string, period: string) {
     })
     .reduce((s, p) => s + p.amount, 0);
 
+  // --- Tendance : encaissé de chacun des 6 derniers mois ---
+  // Réutilise les paiements déjà chargés (aucune requête de plus). Le
+  // dernier point est le mois demandé, pour que le sparkline se termine
+  // sur le chiffre du héros.
+  const trend = Array.from({ length: 6 }, (_, i) => {
+    const p = shiftMonth(period, i - 5);
+    const collected = rentPayments
+      .filter((pay) => {
+        const from = pay.periodFrom ?? monthOf(pay.paidAt ?? pay.createdAt);
+        const to = pay.periodTo ?? from;
+        return from <= p && p <= to;
+      })
+      .reduce((s, pay) => s + pay.amount, 0);
+    return { period: p, collectedRent: collected };
+  });
+
   return {
     period,
     expectedRent,
@@ -137,6 +153,7 @@ export async function getSummary(orgId: string, period: string) {
       collectedRent: prevCollected,
       expectedRent: prevExpected,
     },
+    trend,
   };
 }
 
