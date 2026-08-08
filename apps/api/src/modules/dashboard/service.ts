@@ -44,10 +44,29 @@ export async function getSummary(orgId: string, period: string) {
   let occupied = 0;
   const unpaidUnits: {
     unitId: string;
+    leaseId: string;
     label: string;
     tenantName: string | null;
     due: number;
+    daysLate: number;
   }[] = [];
+
+  // Ancienneté du retard : le loyer est dû en début de mois (convention
+  // camerounaise, pas de jour d'échéance configurable). On compte donc
+  // les jours écoulés depuis le 1er du mois demandé — mais seulement
+  // pour le mois COURANT : un impayé d'un mois passé est « en retard »
+  // d'un nombre de jours qui n'a plus de sens à afficher au jour près.
+  const now = new Date();
+  const [py, pm] = period.split("-").map(Number);
+  const firstOfPeriod = new Date(Date.UTC(py, pm - 1, 1));
+  const isCurrent = period === monthOf(now);
+  const daysSinceDue = isCurrent
+    ? Math.max(
+        0,
+        Math.floor((now.getTime() - firstOfPeriod.getTime()) / 86_400_000),
+      )
+    : // Mois passé : retard « plein » = nombre de jours du mois.
+      new Date(Date.UTC(py, pm, 0)).getUTCDate();
 
   for (const unit of units) {
     const lease = unit.leases[0] ?? null;
@@ -62,9 +81,11 @@ export async function getSummary(orgId: string, period: string) {
     if (covered < lease.rentAmount) {
       unpaidUnits.push({
         unitId: unit.id,
+        leaseId: lease.id,
         label: unit.label,
         tenantName: lease.tenantName,
         due: lease.rentAmount - covered,
+        daysLate: daysSinceDue,
       });
     }
   }
@@ -83,9 +104,8 @@ export async function getSummary(orgId: string, period: string) {
   const prevPeriod = shiftMonth(period, -1);
   // Jour du mois de la période demandée : aujourd'hui si c'est le mois
   // courant, sinon le mois entier (fin de mois) pour une comparaison juste.
-  const now = new Date();
-  const isCurrentMonth = period === monthOf(now);
-  const cutoffDay = isCurrentMonth ? now.getUTCDate() : 31;
+  // `now` et `isCurrent` sont déjà calculés plus haut (retard des impayés).
+  const cutoffDay = isCurrent ? now.getUTCDate() : 31;
 
   const prevExpected = expectedRent; // baux actifs : même dénominateur
   const prevCollected = rentPayments

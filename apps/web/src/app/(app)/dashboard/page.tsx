@@ -11,7 +11,22 @@ import type { FeedEvent } from "@/services/types";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Skeleton, EmptyState } from "@/components/ui/Skeleton";
-import { Table, Th, Td, Tr } from "@/components/ui/Table";
+
+// Ancienneté du retard : nommer l'urgence. Un retard de 2 jours et de
+// 2 mois ne se traitent pas pareil — le tableau plat les montrait
+// identiques. Couleur sémantique discrète, jamais criarde.
+function LateBadge({ days }: { days: number }) {
+  if (days <= 0) return null;
+  const tone =
+    days >= 30 ? "text-danger" : days >= 7 ? "text-warning" : "text-foggy";
+  const text =
+    days >= 60
+      ? `${Math.floor(days / 30)} mois de retard`
+      : days >= 30
+        ? "1 mois de retard"
+        : `${days} jour${days > 1 ? "s" : ""} de retard`;
+  return <span className={`font-medium ${tone}`}>· {text}</span>;
+}
 
 // La question de l'écran : « le mois est-il bon ? » — répondue par la
 // carte du mois avant tout détail (PRODUCT.md, principe 1).
@@ -244,28 +259,40 @@ export default function DashboardPage() {
                     hint="Chaque appartement occupé a couvert son loyer."
                   />
                 ) : (
-                  <Table>
-                    <thead>
-                      <tr>
-                        <Th>Appartement</Th>
-                        <Th>Locataire</Th>
-                        <Th className="text-right">Montant dû</Th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {s.unpaidUnits.map((u) => (
-                        <Tr key={u.label}>
-                          <Td className="font-medium">{u.label}</Td>
-                          <Td className="text-foggy">
+                  // Liste de PERSONNES, pas un tableau : 1 à 5 impayés
+                  // typiques sont des gens à relancer, pas des lignes à
+                  // trier. Chaque ligne mène à la fiche du bail ; le
+                  // retard est nommé, l'action est offerte.
+                  <ul className="flex flex-col">
+                    {s.unpaidUnits.map((u) => (
+                      <li
+                        key={u.leaseId}
+                        className="flex flex-wrap items-center gap-x-16 gap-y-8 border-b border-bebe p-12 last:border-b-0"
+                      >
+                        <Link
+                          href={`/baux?lease=${u.leaseId}`}
+                          className="group min-w-0 flex-1 outline-none"
+                        >
+                          <p className="truncate font-medium text-hof group-hover:underline">
                             {u.tenantName ?? "Sans locataire nommé"}
-                          </Td>
-                          <Td className="text-right font-semibold tabular-nums">
-                            {formatFCFA(u.due)}
-                          </Td>
-                        </Tr>
-                      ))}
-                    </tbody>
-                  </Table>
+                          </p>
+                          <p className="mt-2 flex items-center gap-8 text-label text-foggy">
+                            <span>{u.label}</span>
+                            <LateBadge days={u.daysLate} />
+                          </p>
+                        </Link>
+                        <span className="font-semibold tabular-nums text-hof">
+                          {formatFCFA(u.due)}
+                        </span>
+                        <Link
+                          href={`/paiements?unit=${u.leaseId}`}
+                          className="inline-flex h-32 items-center rounded-lg bg-rausch px-12 text-label font-medium text-white outline-none transition-colors hover:bg-rausch-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hof"
+                        >
+                          Enregistrer un paiement
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
                 )}
               </Card>
             </section>

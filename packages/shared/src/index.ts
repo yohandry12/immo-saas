@@ -386,7 +386,13 @@ export type SummaryResponse = {
   outstandingRent: number;
   depositsHeld: number;
   occupancy: { total: number; occupied: number; rate: number };
-  unpaidUnits: { label: string; tenantName: string | null; due: number }[];
+  unpaidUnits: {
+    leaseId: string; // pour ouvrir la fiche du bail depuis le dashboard
+    label: string;
+    tenantName: string | null;
+    due: number;
+    daysLate: number; // jours de retard (mois courant) ; 0 si à jour
+  }[];
   // Le MÊME jour du mois précédent : « bon » n'a de sens que par
   // comparaison. Un 78 % le 8 du mois se juge contre le 8 d'avant, pas
   // contre 100 %. Le front en tire le verdict (en avance / en retard).
