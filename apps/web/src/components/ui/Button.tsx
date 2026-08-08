@@ -22,7 +22,9 @@ export function Button({
 }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant }) {
   return (
     <button
-      className={`inline-flex items-center justify-center gap-8 rounded-lg px-16 h-40 text-[14px] font-medium transition-colors disabled:cursor-not-allowed ${styles[variant]} ${className}`}
+      // focus-visible : la navigation clavier était invisible (exigence
+      // PRODUCT.md). Ring décalé pour rester net sur fond blanc et faint.
+      className={`inline-flex items-center justify-center gap-8 rounded-lg px-16 h-40 text-[14px] font-medium outline-none transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hof disabled:cursor-not-allowed ${styles[variant]} ${className}`}
       {...props}
     />
   );

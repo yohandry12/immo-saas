@@ -3,7 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import { clearSession, getSession, signalLogout } from "@/lib/session";
 import { goToLogin } from "@/lib/navigation";
 import { authService } from "@/services/auth.service";
-import { Button } from "@/components/ui/Button";
 
 export function Topbar() {
   const { data } = useQuery({
@@ -37,9 +36,15 @@ export function Topbar() {
           </span>
         )}
       </div>
-      <Button variant="ghost" onClick={logout} className="h-32 px-12">
+      {/* Action la MOINS fréquente du produit : texte discret, pas de
+          bordure — le bouton bordé en faisait l'élément le plus
+          contrasté de la barre, à l'inverse de sa hiérarchie réelle. */}
+      <button
+        onClick={logout}
+        className="rounded-lg px-12 py-8 text-[13px] font-medium text-foggy outline-none transition-colors hover:bg-faint hover:text-hof focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hof"
+      >
         Déconnexion
-      </Button>
+      </button>
     </header>
   );
 }
