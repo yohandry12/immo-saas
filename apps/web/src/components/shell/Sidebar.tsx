@@ -76,32 +76,50 @@ function NavLink({
 }) {
   const Icon = item.icon;
   return (
-    <Link
-      href={item.href}
-      aria-current={active ? "page" : undefined}
-      // Repliée : le libellé passe en tooltip natif (title) et l'icône
-      // se centre. On garde le title en permanence : sans coût, il aide
-      // aussi au survol en mode déplié.
-      title={collapsed ? item.label : undefined}
-      // État actif à TROIS signaux (fond + graisse/couleur + barre) :
-      // un seul bg-faint sur blanc était pratiquement invisible.
-      className={`relative flex min-h-40 items-center rounded-lg text-body outline-none transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-hof ${
-        collapsed ? "justify-center px-0" : "gap-12 px-12"
-      } py-8 ${
-        active
-          ? "bg-faint font-medium text-hof"
-          : "text-foggy hover:bg-faint hover:text-hof"
-      }`}
-    >
-      {active && (
+    // `group` : le flyout ci-dessous réagit au survol/focus de tout le
+    // lien. Repliée, la sidebar ne coupe pas le débordement (le panneau
+    // doit sortir à droite).
+    <div className="group relative">
+      <Link
+        href={item.href}
+        aria-current={active ? "page" : undefined}
+        // Repliée, le libellé n'est plus écrit : title le porte comme
+        // accessible name (et déclenche l'astuce déplié au survol aussi).
+        title={collapsed ? item.label : undefined}
+        // État actif à TROIS signaux (fond + graisse/couleur + barre) :
+        // un seul bg-faint sur blanc était pratiquement invisible.
+        className={`relative flex min-h-40 items-center rounded-lg text-body outline-none transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-hof ${
+          collapsed ? "justify-center px-0" : "gap-12 px-12"
+        } py-8 ${
+          active
+            ? "bg-faint font-medium text-hof"
+            : "text-foggy hover:bg-faint hover:text-hof"
+        }`}
+      >
+        {active && (
+          <span
+            aria-hidden="true"
+            className="absolute left-0 top-1/2 h-16 w-[3px] -translate-y-1/2 rounded-full bg-hof"
+          />
+        )}
+        <Icon className="shrink-0" />
+        {!collapsed && item.label}
+      </Link>
+
+      {/* Flyout : repliée, le libellé glisse à droite au survol/focus.
+          Panneau net avec ombre douce plutôt que le tooltip système
+          jaune. Ne bouge jamais la cible ; masqué au clavier tant que
+          le lien n'a pas le focus. aria-hidden car le libellé est déjà
+          porté par l'accessible name du lien (title). */}
+      {collapsed && (
         <span
           aria-hidden="true"
-          className="absolute left-0 top-1/2 h-16 w-[3px] -translate-y-1/2 rounded-full bg-hof"
-        />
+          className="pointer-events-none absolute left-full top-1/2 z-50 ml-8 -translate-y-1/2 translate-x-[-4px] whitespace-nowrap rounded-lg border border-bebe bg-white px-12 py-8 text-body font-medium text-hof opacity-0 shadow-[0_6px_20px_rgba(0,0,0,0.12)] transition-[opacity,transform] duration-150 ease-out group-hover:translate-x-0 group-hover:opacity-100 group-focus-within:translate-x-0 group-focus-within:opacity-100 motion-reduce:transition-none"
+        >
+          {item.label}
+        </span>
       )}
-      <Icon className="shrink-0" />
-      {!collapsed && item.label}
-    </Link>
+    </div>
   );
 }
 
