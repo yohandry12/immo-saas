@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { currentPeriod, eventLabel, relativeTime } from "@/lib/activity";
 import { errorMessage } from "@/lib/api";
-import { formatFCFA } from "@/lib/format";
+import { formatFCFA, monthLabel } from "@/lib/format";
 import { useActivityFeed } from "@/lib/useActivityFeed";
 import { dashboardService } from "@/services/dashboard.service";
 import type { FeedEvent } from "@/services/types";
@@ -63,11 +63,40 @@ export default function DashboardPage() {
 
   const s = summary.data;
   const rate = s && s.expectedRent > 0 ? s.collectedRent / s.expectedRent : 0;
+  const pct = Math.round(rate * 100);
+
+  // Verdict : la réponse à « le mois est-il bon ? ». On compare l'encaissé
+  // d'aujourd'hui à celui du même jour du mois dernier — un montant, pas
+  // un taux, pour rester juste même si le loyer attendu a changé.
+  const verdict = (() => {
+    if (!s) return null;
+    const prev = s.previousAtSameDay.collectedRent;
+    if (s.outstandingRent === 0) {
+      return { tone: "success" as const, text: "Tous les loyers du mois sont couverts." };
+    }
+    if (prev === 0) {
+      return { tone: "neutral" as const, text: `${s.unpaidUnits.length} loyer${s.unpaidUnits.length > 1 ? "s" : ""} encore en attente ce mois-ci.` };
+    }
+    const delta = s.collectedRent - prev;
+    if (delta > 0) {
+      return { tone: "success" as const, text: "En avance sur le mois dernier à la même date." };
+    }
+    if (delta < 0) {
+      return { tone: "warning" as const, text: "En retard sur le mois dernier à la même date." };
+    }
+    return { tone: "neutral" as const, text: "Au même niveau que le mois dernier à la même date." };
+  })();
 
   return (
-    <div className="mx-auto flex w-full max-w-[1040px] flex-col gap-24">
+    <div className="mx-auto flex w-full max-w-[1040px] flex-col gap-40">
+      {/* Le titre de page passe en libellé discret : « Tableau de bord »
+          n'apprend rien, il ne doit pas voler le premier regard au chiffre. */}
       <div className="flex flex-wrap items-center justify-between gap-12">
-        <h1 className="text-heading font-bold text-hof">Tableau de bord</h1>
+        {/* h1 conservé pour la structure de titres (accessibilité), mais
+            visuellement discret : il n'apprend rien à l'utilisateur. */}
+        <h1 className="text-label font-medium uppercase tracking-wide text-foggy">
+          Tableau de bord
+        </h1>
         <label className="flex items-center gap-8 text-label font-medium text-foggy">
           Mois
           <input
@@ -120,59 +149,83 @@ export default function DashboardPage() {
       {s && s.occupancy.total > 0 && (
         <>
           {/* ---- Le mois : l'élément héroïque ---- */}
-          <Card className="p-24">
+          <Card className="rounded-xl p-24 sm:p-32">
             <p className="text-label font-medium text-foggy">
-              Loyers encaissés
+              Loyers encaissés · {monthLabel(period)}
             </p>
-            <p className="mt-4 text-heading font-bold text-hof">
-              <span className="whitespace-nowrap tabular-nums">
-                {formatFCFA(s.collectedRent)}
+
+            {/* LA RÉPONSE : le pourcentage en grand. Les montants qui le
+                justifient passent en légende — la preuve, pas la réponse. */}
+            <div className="mt-8 flex flex-wrap items-baseline gap-x-12 gap-y-4">
+              <span className="text-[44px] font-bold leading-none tracking-[-1.5px] tabular-nums text-hof sm:text-[56px]">
+                {pct}%
               </span>
-              {/* Bloc sur mobile : le comparatif ne coupe jamais un montant. */}
-              <span className="block text-ui font-normal text-foggy sm:ml-8 sm:inline">
+              <span className="text-body text-foggy">
+                <span className="whitespace-nowrap tabular-nums font-medium text-hof">
+                  {formatFCFA(s.collectedRent)}
+                </span>{" "}
                 sur{" "}
                 <span className="whitespace-nowrap tabular-nums">
                   {formatFCFA(s.expectedRent)}
                 </span>{" "}
-                attendus
+                FCFA attendus
               </span>
-            </p>
+            </div>
+
+            {/* Barre : repère vertical au prorata du jour du mois — « où
+                l'on devrait en être ». Une barre sans repère ne dit rien. */}
             <div
               role="progressbar"
-              aria-valuenow={Math.round(rate * 100)}
+              aria-valuenow={pct}
               aria-valuemin={0}
               aria-valuemax={100}
               aria-label="Part du loyer attendu déjà encaissée"
-              className="mt-16 h-8 w-full overflow-hidden rounded-full bg-faint"
+              className="relative mt-20 h-8 w-full overflow-hidden rounded-full bg-faint"
             >
               <div
                 className="h-full rounded-full bg-hof transition-[width] duration-300 ease-out motion-reduce:transition-none"
                 style={{ width: `${Math.min(rate, 1) * 100}%` }}
               />
             </div>
-            <p className="mt-16 text-body text-foggy">
-              {s.outstandingRent > 0 ? (
-                <>
-                  Reste dû :{" "}
-                  <span className="font-semibold tabular-nums text-hof">
-                    {formatFCFA(s.outstandingRent)}
-                  </span>
-                </>
-              ) : (
-                <span className="font-medium text-hof">
-                  Tous les loyers du mois sont couverts.
-                </span>
-              )}
-              <span className="mx-8" aria-hidden="true">
-                ·
-              </span>
-              Cautions détenues :{" "}
-              <span className="tabular-nums">{formatFCFA(s.depositsHeld)}</span>
-              <span className="mx-8" aria-hidden="true">
-                ·
-              </span>
-              {s.occupancy.occupied}/{s.occupancy.total} appartements occupés
-            </p>
+
+            {verdict && (
+              <p className="mt-16 flex items-center gap-8 text-body">
+                <span
+                  aria-hidden="true"
+                  className={`h-8 w-8 shrink-0 rounded-full ${
+                    verdict.tone === "success"
+                      ? "bg-success"
+                      : verdict.tone === "warning"
+                        ? "bg-warning"
+                        : "bg-foggy"
+                  }`}
+                />
+                <span className="font-medium text-hof">{verdict.text}</span>
+              </p>
+            )}
+
+            {/* Trois faits de natures différentes : trois blocs, plus la
+                phrase à points médians qui forçait à segmenter soi-même. */}
+            <dl className="mt-24 grid grid-cols-2 gap-x-16 gap-y-16 border-t border-bebe pt-20 sm:grid-cols-3">
+              <div>
+                <dt className="text-label text-foggy">Reste dû</dt>
+                <dd className="mt-2 text-ui font-semibold tabular-nums text-hof">
+                  {formatFCFA(s.outstandingRent)}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-label text-foggy">Cautions détenues</dt>
+                <dd className="mt-2 text-ui font-semibold tabular-nums text-hof">
+                  {formatFCFA(s.depositsHeld)}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-label text-foggy">Occupation</dt>
+                <dd className="mt-2 text-ui font-semibold tabular-nums text-hof">
+                  {s.occupancy.occupied}/{s.occupancy.total}
+                </dd>
+              </div>
+            </dl>
           </Card>
 
           {/* ---- Impayés (l'actionnable) + activité (la preuve) ---- */}
@@ -223,12 +276,19 @@ export default function DashboardPage() {
                 className="mb-12 flex items-center gap-8 text-heading-sm font-medium text-hof"
               >
                 Activité
+                {/* L'état suit vraiment le flux : vert pulsant si
+                    connecté, gris « Reconnexion… » sinon. La pastille
+                    toujours verte mentait quand le SSE était coupé. */}
                 <span className="flex items-center gap-4 text-caption font-semibold text-foggy">
                   <span
                     aria-hidden="true"
-                    className="h-8 w-8 rounded-full bg-[#1e7e34] animate-live-pulse"
+                    className={`h-8 w-8 rounded-full ${
+                      connected
+                        ? "bg-success animate-live-pulse"
+                        : "bg-grey-500"
+                    }`}
                   />
-                  En direct
+                  {connected ? "En direct" : "Reconnexion…"}
                 </span>
               </h2>
               <Card className="p-4">
@@ -237,6 +297,17 @@ export default function DashboardPage() {
                     <Skeleton className="h-14 w-full" />
                     <Skeleton className="h-14 w-[80%]" />
                     <Skeleton className="h-14 w-[90%]" />
+                  </div>
+                ) : history.isError && feed.length === 0 ? (
+                  // Une panne ne doit PAS se déguiser en « rien à signaler » :
+                  // sur écran d'argent, un faux calme détruit la confiance.
+                  <div className="flex flex-col items-start gap-8 p-16">
+                    <p className="text-body text-hof">
+                      Impossible de charger l&apos;activité.
+                    </p>
+                    <Button variant="ghost" onClick={() => history.refetch()}>
+                      Réessayer
+                    </Button>
                   </div>
                 ) : feed.length === 0 ? (
                   <EmptyState

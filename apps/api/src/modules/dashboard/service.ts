@@ -76,6 +76,30 @@ export async function getSummary(orgId: string, period: string) {
     .filter((p) => p.kind === "DEPOSIT")
     .reduce((s, p) => s + p.amount, 0);
 
+  // --- Point de comparaison : le MÊME jour du mois précédent ---
+  // « bon » n'a de sens que relatif. On compare l'encaissé cumulé à la
+  // même date : combien était rentré au 8 du mois dernier ? Le front en
+  // tire « en avance » / « en retard ».
+  const prevPeriod = shiftMonth(period, -1);
+  // Jour du mois de la période demandée : aujourd'hui si c'est le mois
+  // courant, sinon le mois entier (fin de mois) pour une comparaison juste.
+  const now = new Date();
+  const isCurrentMonth = period === monthOf(now);
+  const cutoffDay = isCurrentMonth ? now.getUTCDate() : 31;
+
+  const prevExpected = expectedRent; // baux actifs : même dénominateur
+  const prevCollected = rentPayments
+    .filter((p) => {
+      const from = p.periodFrom ?? monthOf(p.paidAt ?? p.createdAt);
+      const to = p.periodTo ?? from;
+      if (!(from <= prevPeriod && prevPeriod <= to)) return false;
+      // Cumul « au même jour » : le paiement doit avoir été encaissé
+      // au plus tard le cutoffDay du mois précédent.
+      const paid = p.paidAt ?? p.createdAt;
+      return paid.getUTCDate() <= cutoffDay;
+    })
+    .reduce((s, p) => s + p.amount, 0);
+
   return {
     period,
     expectedRent,
@@ -89,7 +113,18 @@ export async function getSummary(orgId: string, period: string) {
       rate: units.length ? occupied / units.length : 0,
     },
     unpaidUnits,
+    previousAtSameDay: {
+      collectedRent: prevCollected,
+      expectedRent: prevExpected,
+    },
   };
+}
+
+/** Décale une période "AAAA-MM" de n mois (n négatif = passé). */
+function shiftMonth(period: string, n: number): string {
+  const [y, m] = period.split("-").map(Number);
+  const d = new Date(Date.UTC(y, m - 1 + n, 1));
+  return d.toISOString().slice(0, 7);
 }
 
 /**

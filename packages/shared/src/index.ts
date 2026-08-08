@@ -387,6 +387,13 @@ export type SummaryResponse = {
   depositsHeld: number;
   occupancy: { total: number; occupied: number; rate: number };
   unpaidUnits: { label: string; tenantName: string | null; due: number }[];
+  // Le MÊME jour du mois précédent : « bon » n'a de sens que par
+  // comparaison. Un 78 % le 8 du mois se juge contre le 8 d'avant, pas
+  // contre 100 %. Le front en tire le verdict (en avance / en retard).
+  previousAtSameDay: {
+    collectedRent: number; // encaissé cumulé au même jour, mois -1
+    expectedRent: number; // attendu du mois -1 (dénominateur du taux)
+  };
 };
 
 /** Événement du flux d'activité (SSE et historique). */

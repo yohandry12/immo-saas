@@ -17,6 +17,11 @@
   --color-deco: #dddddd;
   --color-faint: #f7f7f7;
   --color-white: #ffffff;
+  /* Tons sémantiques discrets (DESIGN.md les tolère) : le verdict du mois
+     et les statuts. success/warning cadrés pour ≥ 3:1 sur blanc. */
+  --color-success: #1e7e34;
+  --color-warning: #b45309;
+  --color-danger: #e00b41;
 
   /* Typography */
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system,

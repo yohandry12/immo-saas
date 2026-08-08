@@ -17,3 +17,11 @@ export function formatDate(d: string | Date | null | undefined): string {
   if (!d) return "—";
   return df.format(typeof d === "string" ? new Date(d) : d);
 }
+
+// Période "AAAA-MM" → « août 2026 ». Pour titrer le mois affiché.
+const mf = new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" });
+
+export function monthLabel(period: string): string {
+  const [y, m] = period.split("-").map(Number);
+  return mf.format(new Date(y, m - 1, 1));
+}
