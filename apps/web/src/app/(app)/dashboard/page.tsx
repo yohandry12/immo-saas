@@ -78,6 +78,9 @@ export default function DashboardPage() {
   }, [live, history.data]);
 
   const s = summary.data;
+  // Aucun loyer attendu (bail sans montant, franchise) n'est PAS « 0 % » :
+  // ce serait un faux « personne n'a payé » sur un écran d'argent.
+  const noRentExpected = !!s && s.expectedRent === 0;
   const rate = s && s.expectedRent > 0 ? s.collectedRent / s.expectedRent : 0;
   const pct = Math.round(rate * 100);
 
@@ -186,40 +189,33 @@ export default function DashboardPage() {
 
             {/* LA RÉPONSE : le pourcentage en grand. Les montants qui le
                 justifient passent en légende — la preuve, pas la réponse. */}
-            <div className="mt-8 flex flex-wrap items-baseline gap-x-12 gap-y-4">
-              <span className="text-[44px] font-bold leading-none tracking-[-1.5px] tabular-nums text-hof sm:text-[56px]">
-                {pct}%
-              </span>
-              <span className="text-body text-foggy">
-                <span className="whitespace-nowrap tabular-nums font-medium text-hof">
-                  {formatFCFA(s.collectedRent)}
-                </span>{" "}
-                sur{" "}
-                <span className="whitespace-nowrap tabular-nums">
-                  {formatFCFA(s.expectedRent)}
-                </span>{" "}
-                FCFA attendus
-              </span>
-            </div>
+            {noRentExpected ? (
+              <p className="mt-8 text-heading font-bold text-hof">
+                Aucun loyer attendu ce mois-ci
+              </p>
+            ) : (
+              <div className="mt-8 flex flex-wrap items-baseline gap-x-12 gap-y-4">
+                <span className="text-[44px] font-bold leading-none tracking-[-1.5px] tabular-nums text-hof sm:text-[56px]">
+                  {pct}%
+                </span>
+                <span className="text-body text-foggy">
+                  <span className="whitespace-nowrap tabular-nums font-medium text-hof">
+                    {formatFCFA(s.collectedRent)}
+                  </span>{" "}
+                  sur{" "}
+                  <span className="whitespace-nowrap tabular-nums">
+                    {formatFCFA(s.expectedRent)}
+                  </span>{" "}
+                  FCFA attendus
+                </span>
+              </div>
+            )}
 
-            {/* Barre : repère vertical au prorata du jour du mois — « où
-                l'on devrait en être ». Une barre sans repère ne dit rien. */}
-            <div
-              role="progressbar"
-              aria-valuenow={pct}
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-label="Part du loyer attendu déjà encaissée"
-              className="relative mt-20 h-8 w-full overflow-hidden rounded-full bg-faint"
-            >
-              <div
-                className="h-full rounded-full bg-hof transition-[width] duration-300 ease-out motion-reduce:transition-none"
-                style={{ width: `${Math.min(rate, 1) * 100}%` }}
-              />
-            </div>
-
+            {/* Le verdict suit IMMÉDIATEMENT le chiffre : c'est LUI la
+                réponse « bon / pas bon », il ne doit pas attendre après
+                la barre et le sparkline. */}
             {verdict && (
-              <p className="mt-16 flex items-center gap-8 text-body">
+              <p className="mt-12 flex items-center gap-8 text-body">
                 <span
                   aria-hidden="true"
                   className={`h-8 w-8 shrink-0 rounded-full ${
@@ -232,6 +228,24 @@ export default function DashboardPage() {
                 />
                 <span className="font-medium text-hof">{verdict.text}</span>
               </p>
+            )}
+
+            {/* Barre + tendance : sans loyer attendu, un taux n'a pas de
+                sens — on les masque plutôt que d'afficher une barre vide. */}
+            {!noRentExpected && (
+              <div
+                role="progressbar"
+                aria-valuenow={pct}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label="Part du loyer attendu déjà encaissée"
+                className="relative mt-20 h-8 w-full overflow-hidden rounded-full bg-faint"
+              >
+                <div
+                  className="h-full rounded-full bg-hof transition-[width] duration-300 ease-out motion-reduce:transition-none"
+                  style={{ width: `${Math.min(rate, 1) * 100}%` }}
+                />
+              </div>
             )}
 
             {/* La tendance : 6 mois d'encaissements. Répond à « le mois
@@ -284,38 +298,51 @@ export default function DashboardPage() {
                   // trier. Chaque ligne mène à la fiche du bail ; le
                   // retard est nommé, l'action est offerte.
                   <ul className="flex flex-col">
-                    {s.unpaidUnits.map((u) => (
-                      <li
-                        key={u.leaseId}
-                        className="flex flex-wrap items-center gap-x-16 gap-y-8 border-b border-bebe p-12 last:border-b-0"
-                      >
-                        <Link
-                          href={`/baux?lease=${u.leaseId}`}
-                          // focus-visible : ce lien enveloppe le nom du
-                          // locataire, cible clavier au même titre que le
-                          // bouton d'action — sans remplacement, la nav
-                          // clavier y devenait invisible (PRODUCT.md).
-                          className="group min-w-0 flex-1 rounded-lg outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hof"
+                    {/* Le plus en retard d'abord : la couleur rouge et
+                        l'action pleine tombent en tête, là où l'œil va. */}
+                    {[...s.unpaidUnits]
+                      .sort((a, b) => b.daysLate - a.daysLate)
+                      .map((u, i) => (
+                        <li
+                          key={u.leaseId}
+                          className="flex flex-wrap items-center gap-x-16 gap-y-8 border-b border-bebe p-12 last:border-b-0"
                         >
-                          <p className="truncate font-medium text-hof group-hover:underline">
-                            {u.tenantName ?? "Sans locataire nommé"}
-                          </p>
-                          <p className="mt-2 flex items-center gap-8 text-label text-foggy">
-                            <span>{u.label}</span>
-                            <LateBadge days={u.daysLate} />
-                          </p>
-                        </Link>
-                        <span className="font-semibold tabular-nums text-hof">
-                          {formatFCFA(u.due)}
-                        </span>
-                        <Link
-                          href={`/paiements?unit=${u.leaseId}`}
-                          className="inline-flex h-32 items-center rounded-lg bg-rausch px-12 text-label font-medium text-white outline-none transition-colors hover:bg-rausch-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hof"
-                        >
-                          Enregistrer un paiement
-                        </Link>
-                      </li>
-                    ))}
+                          <Link
+                            href={`/baux?lease=${u.leaseId}`}
+                            // focus-visible : ce lien enveloppe le nom du
+                            // locataire, cible clavier au même titre que le
+                            // bouton d'action — sans remplacement, la nav
+                            // clavier y devenait invisible (PRODUCT.md).
+                            className="group min-w-0 flex-1 rounded-lg outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hof"
+                          >
+                            <p className="truncate font-medium text-hof group-hover:underline">
+                              {u.tenantName ?? "Sans locataire nommé"}
+                            </p>
+                            <p className="mt-2 flex items-center gap-8 text-label text-foggy">
+                              <span>{u.label}</span>
+                              <LateBadge days={u.daysLate} />
+                            </p>
+                          </Link>
+                          <span className="font-semibold tabular-nums text-hof">
+                            {formatFCFA(u.due)}
+                          </span>
+                          {/* « Un seul accent » : le rausch PLEIN est réservé
+                              au plus urgent (en tête). Les autres gardent la
+                              même action, en variante sobre — sinon 5 taches
+                              corail se disputent l'attention et l'accent cesse
+                              de désigner l'action primordiale. */}
+                          <Link
+                            href={`/paiements?lease=${u.leaseId}`}
+                            className={`inline-flex h-32 items-center rounded-lg px-12 text-label font-medium outline-none transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hof ${
+                              i === 0
+                                ? "bg-rausch text-white hover:bg-rausch-600"
+                                : "text-hof hover:bg-faint"
+                            }`}
+                          >
+                            Enregistrer un paiement
+                          </Link>
+                        </li>
+                      ))}
                   </ul>
                 )}
               </Card>
