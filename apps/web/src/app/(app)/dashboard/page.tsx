@@ -10,8 +10,16 @@ import { dashboardService } from "@/services/dashboard.service";
 import type { FeedEvent } from "@/services/types";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { MiniBars } from "@/components/ui/MiniBars";
 import { Skeleton, EmptyState } from "@/components/ui/Skeleton";
 import { Sparkline } from "@/components/ui/Sparkline";
+import { StatCard } from "@/components/ui/StatCard";
+import {
+  IconBanknote,
+  IconBuilding,
+  IconGauge,
+  IconWrench,
+} from "@/components/shell/icons";
 
 // Ancienneté du retard : nommer l'urgence. Un retard de 2 jours et de
 // 2 mois ne se traitent pas pareil — le tableau plat les montrait
@@ -282,6 +290,44 @@ export default function DashboardPage() {
               </div>
             </dl>
           </Card>
+
+          {/* ---- Cartes de suivi : le contexte, sous la réponse du mois.
+              Elles INFORMENT (jamais de corail). ---- */}
+          <div className="grid grid-cols-2 gap-16 lg:grid-cols-4">
+            <StatCard
+              label="Patrimoine"
+              icon={<IconBuilding width={16} height={16} />}
+              value={`${s.portfolio.units} appartement${
+                s.portfolio.units > 1 ? "s" : ""
+              }`}
+              detail={
+                <>
+                  {s.portfolio.buildings} immeuble
+                  {s.portfolio.buildings > 1 ? "s" : ""} ·{" "}
+                  {s.portfolio.activeTenants} locataire
+                  {s.portfolio.activeTenants > 1 ? "s" : ""}
+                </>
+              }
+            />
+            <StatCard
+              label="Encaissé ce mois"
+              icon={<IconBanknote width={16} height={16} />}
+              value={formatFCFA(s.collectedRent)}
+              detail={<MiniBars data={s.trend} />}
+            />
+            <StatCard
+              label="Occupation"
+              icon={<IconGauge width={16} height={16} />}
+              value={`${s.occupancy.occupied}/${s.occupancy.total}`}
+              detail={`${Math.round(s.occupancy.rate * 100)}% occupé`}
+            />
+            <StatCard
+              label="Dépenses ce mois"
+              icon={<IconWrench width={16} height={16} />}
+              value={formatFCFA(s.monthlyExpenses)}
+              detail="déclarées ce mois-ci"
+            />
+          </div>
 
           {/* ---- Impayés (l'actionnable) + activité (la preuve) ---- */}
           <div className="grid gap-24 lg:grid-cols-[2fr_1fr]">
