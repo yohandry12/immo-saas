@@ -409,7 +409,9 @@ export type SummaryResponse = {
   portfolio: {
     buildings: number;
     units: number;
-    activeTenants: number; // baux en vigueur le mois demandé
+    // Appartements occupés (bail en vigueur) le mois demandé — même
+    // compteur que occupancy.occupied. Convention MVP : 1 occupé = 1 locataire.
+    activeTenants: number;
   };
   // Dépenses déclarées ce mois : le « sortant » face au « rentrant ».
   monthlyExpenses: number;
