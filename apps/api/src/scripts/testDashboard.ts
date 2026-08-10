@@ -116,6 +116,12 @@ async function main() {
   assert.equal(summary.occupancy.rate, 1, "2 appartements, 2 baux");
   assert.equal(summary.unpaidUnits.length, 1, "un seul impayé");
   assert.equal(summary.unpaidUnits[0].label, "D2");
+  assert.deepEqual(
+    summary.portfolio,
+    { buildings: 1, units: 2, activeTenants: 2 },
+    "portefeuille : 1 immeuble, 2 apparts, 2 baux en vigueur",
+  );
+  assert.equal(summary.monthlyExpenses, 0, "aucune dépense ce mois");
 
   // 2. L'historique contient la signature de bail
   const activity = await (

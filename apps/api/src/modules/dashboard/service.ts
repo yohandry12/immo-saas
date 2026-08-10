@@ -10,7 +10,12 @@ import type { Payment } from "@immo/database";
  * migrable en SQL plus tard si le volume l'exige.
  */
 export async function getSummary(orgId: string, period: string) {
-  const [units, payments] = await Promise.all([
+  // Bornes du mois demandé, en UTC : [1er du mois, 1er du mois suivant[.
+  const [yy, mm] = period.split("-").map(Number);
+  const monthStart = new Date(Date.UTC(yy, mm - 1, 1));
+  const monthEnd = new Date(Date.UTC(yy, mm, 1));
+
+  const [units, payments, expenseAgg] = await Promise.all([
     prisma.unit.findMany({
       where: { building: { orgId } },
       // On charge TOUS les baux (pas seulement les actifs) : la vigueur au
@@ -29,6 +34,10 @@ export async function getSummary(orgId: string, period: string) {
       },
     }),
     prisma.payment.findMany({ where: { orgId, status: "CONFIRMED" } }),
+    prisma.expense.aggregate({
+      where: { orgId, createdAt: { gte: monthStart, lt: monthEnd } },
+      _sum: { amount: true },
+    }),
   ]);
 
   const monthOf = (d: Date) => d.toISOString().slice(0, 7);
@@ -157,6 +166,8 @@ export async function getSummary(orgId: string, period: string) {
     return { period: p, collectedRent: collected };
   });
 
+  const buildingIds = new Set(units.map((u) => u.buildingId));
+
   return {
     period,
     expectedRent,
@@ -175,6 +186,12 @@ export async function getSummary(orgId: string, period: string) {
       expectedRent: prevExpected,
     },
     trend,
+    portfolio: {
+      buildings: buildingIds.size,
+      units: units.length,
+      activeTenants: occupied, // baux en vigueur (compteur de la boucle)
+    },
+    monthlyExpenses: expenseAgg._sum.amount ?? 0,
   };
 }
 

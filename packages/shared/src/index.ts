@@ -404,6 +404,15 @@ export type SummaryResponse = {
   // dernier). Un sparkline sous le héros : la tendance répond à « le mois
   // est-il bon ? » là où un chiffre isolé ne le peut pas.
   trend: { period: string; collectedRent: number }[];
+  // Taille du portefeuille : ne dépend pas du mois, mais fourni ici pour
+  // éviter un second appel réseau (important sur 3G).
+  portfolio: {
+    buildings: number;
+    units: number;
+    activeTenants: number; // baux en vigueur le mois demandé
+  };
+  // Dépenses déclarées ce mois : le « sortant » face au « rentrant ».
+  monthlyExpenses: number;
 };
 
 /** Événement du flux d'activité (SSE et historique). */
