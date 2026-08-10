@@ -137,11 +137,25 @@ export default function DashboardPage() {
       )}
 
       {summary.isPending && (
-        <Card aria-busy="true" aria-label="Chargement du mois">
-          <Skeleton className="mb-12 h-16 w-[120px]" />
-          <Skeleton className="mb-16 h-32 w-[280px]" />
-          <Skeleton className="mb-16 h-8 w-full" />
-          <Skeleton className="h-14 w-[360px] max-w-full" />
+        // Le squelette préfigure la forme réelle du héros (pourcentage +
+        // barre + verdict + sparkline + 3 blocs) : un squelette qui ne
+        // ressemble pas au contenu final fait « sauter » la mise en page
+        // à l'arrivée des données.
+        <Card
+          aria-busy="true"
+          aria-label="Chargement du mois"
+          className="rounded-xl p-24 sm:p-32"
+        >
+          <Skeleton className="h-16 w-[160px]" />
+          <Skeleton className="mt-8 h-[44px] w-[220px] sm:h-[56px]" />
+          <Skeleton className="mt-20 h-8 w-full" />
+          <Skeleton className="mt-16 h-14 w-[300px] max-w-full" />
+          <Skeleton className="mt-24 h-12 w-full sm:h-16" />
+          <div className="mt-24 grid grid-cols-2 gap-x-16 gap-y-16 border-t border-bebe pt-20 sm:grid-cols-3">
+            <Skeleton className="h-32 w-full" />
+            <Skeleton className="h-32 w-full" />
+            <Skeleton className="h-32 w-full" />
+          </div>
         </Card>
       )}
 
@@ -277,7 +291,11 @@ export default function DashboardPage() {
                       >
                         <Link
                           href={`/baux?lease=${u.leaseId}`}
-                          className="group min-w-0 flex-1 outline-none"
+                          // focus-visible : ce lien enveloppe le nom du
+                          // locataire, cible clavier au même titre que le
+                          // bouton d'action — sans remplacement, la nav
+                          // clavier y devenait invisible (PRODUCT.md).
+                          className="group min-w-0 flex-1 rounded-lg outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hof"
                         >
                           <p className="truncate font-medium text-hof group-hover:underline">
                             {u.tenantName ?? "Sans locataire nommé"}
