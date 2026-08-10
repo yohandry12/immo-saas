@@ -13,6 +13,7 @@
     "test:payments": "tsx src/scripts/testPayments.ts",
     "test:leases": "tsx src/scripts/testLeases.ts",
     "test:dashboard": "tsx src/scripts/testDashboard.ts",
+    "test:leaseinforce": "tsx src/scripts/testLeaseInForce.ts",
     "test:charges": "tsx src/scripts/testCharges.ts",
     "test:momo": "tsx src/scripts/testMomo.ts",
     "test:tenant": "tsx src/scripts/testTenant.ts",

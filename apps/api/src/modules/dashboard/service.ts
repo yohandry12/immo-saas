@@ -13,14 +13,16 @@ export async function getSummary(orgId: string, period: string) {
   const [units, payments] = await Promise.all([
     prisma.unit.findMany({
       where: { building: { orgId } },
-      // include filtré : ne ramène que les baux ACTIFS par appartement.
+      // On charge TOUS les baux (pas seulement les actifs) : la vigueur au
+      // mois demandé se décide en mémoire, sinon un bail terminé disparaît de
+      // l'historique et un bail futur pollue les mois antérieurs.
       include: {
         leases: {
-          where: { endDate: null },
           select: {
             id: true,
             rentAmount: true,
             tenantName: true,
+            startDate: true,
             endDate: true,
           },
         },
@@ -68,9 +70,20 @@ export async function getSummary(orgId: string, period: string) {
     : // Mois passé : retard « plein » = nombre de jours du mois.
       new Date(Date.UTC(py, pm, 0)).getUTCDate();
 
+  // Un bail est « en vigueur » le mois demandé s'il a commencé (au mois
+  // près) et n'est pas terminé avant. La base garantit un seul bail ACTIF
+  // par appartement, mais pas l'absence de chevauchement entre baux passés :
+  // en cas d'ambiguïté, on prend le plus récemment démarré.
+  const inForce = (l: { startDate: Date; endDate: Date | null }) =>
+    monthOf(l.startDate) <= period &&
+    (l.endDate === null || period <= monthOf(l.endDate));
+
   for (const unit of units) {
-    const lease = unit.leases[0] ?? null;
-    if (!lease) continue; // appartement vide : ni attendu, ni impayé
+    const lease =
+      unit.leases
+        .filter(inForce)
+        .sort((a, b) => (a.startDate < b.startDate ? 1 : -1))[0] ?? null;
+    if (!lease) continue; // appartement vide CE mois-là : ni attendu, ni impayé
     occupied += 1;
     expectedRent += lease.rentAmount;
 
@@ -107,7 +120,15 @@ export async function getSummary(orgId: string, period: string) {
   // `now` et `isCurrent` sont déjà calculés plus haut (retard des impayés).
   const cutoffDay = isCurrent ? now.getUTCDate() : 31;
 
-  const prevExpected = expectedRent; // baux actifs : même dénominateur
+  const inForcePrev = (l: { startDate: Date; endDate: Date | null }) =>
+    monthOf(l.startDate) <= prevPeriod &&
+    (l.endDate === null || prevPeriod <= monthOf(l.endDate));
+  const prevExpected = units.reduce((sum, u) => {
+    const l = u.leases
+      .filter(inForcePrev)
+      .sort((a, b) => (a.startDate < b.startDate ? 1 : -1))[0];
+    return sum + (l ? l.rentAmount : 0);
+  }, 0);
   const prevCollected = rentPayments
     .filter((p) => {
       const from = p.periodFrom ?? monthOf(p.paidAt ?? p.createdAt);
