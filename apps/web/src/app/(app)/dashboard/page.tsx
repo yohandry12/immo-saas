@@ -212,7 +212,7 @@ export default function DashboardPage() {
                   <span className="whitespace-nowrap tabular-nums">
                     {formatFCFA(s.expectedRent)}
                   </span>{" "}
-                  FCFA attendus
+                  attendus
                 </span>
               </div>
             )}

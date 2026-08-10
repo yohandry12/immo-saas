@@ -71,17 +71,19 @@ export function Topbar() {
 
   return (
     <header className="flex h-[64px] items-center justify-between gap-16 border-b border-bebe bg-white px-16 sm:px-24">
-      {/* Zone identité : la pastille aux initiales de l'org ancre la
-          marque à gauche ; nom de l'org en titre, rôle en sous-ligne. */}
-      <div className="flex min-w-0 items-center gap-12">
+      {/* Zone identité : un contenant arrondi doux groupe la pastille et
+          le nom en UN objet. Sans lui, la pastille flottait collée au
+          coin haut-gauche et se confondait avec la sidebar. La pastille
+          aux initiales de l'org, arrondie, ancre la marque. */}
+      <div className="flex min-w-0 items-center gap-10 rounded-2xl bg-faint py-6 pl-6 pr-14">
         <span
           aria-hidden="true"
-          className="flex h-36 w-36 shrink-0 items-center justify-center rounded-lg bg-rausch/10 text-label font-bold tracking-tight text-rausch"
+          className="flex h-32 w-32 shrink-0 items-center justify-center rounded-xl bg-rausch text-caption font-bold tracking-tight text-white"
         >
           {initials(orgName)}
         </span>
         <div className="min-w-0 leading-tight">
-          <p className="truncate text-ui font-semibold text-hof">{orgName}</p>
+          <p className="truncate text-body font-semibold text-hof">{orgName}</p>
           {org?.role && (
             <p className="truncate text-caption text-foggy">
               {roleLabel[org.role] ?? org.role}
