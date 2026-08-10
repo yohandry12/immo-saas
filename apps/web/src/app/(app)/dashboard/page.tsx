@@ -108,22 +108,28 @@ export default function DashboardPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-[1040px] flex-col gap-40">
-      {/* Le titre de page passe en libellé discret : « Tableau de bord »
-          n'apprend rien, il ne doit pas voler le premier regard au chiffre. */}
-      <div className="flex flex-wrap items-center justify-between gap-12">
-        {/* h1 conservé pour la structure de titres (accessibilité), mais
-            visuellement discret : il n'apprend rien à l'utilisateur. */}
-        <h1 className="text-label font-medium uppercase tracking-wide text-foggy">
-          Tableau de bord
-        </h1>
+      {/* Ligne de contexte : discrète par choix — le chiffre héros doit
+          gagner le premier regard (PRODUCT.md principe 1). Mais elle
+          n'est plus un mot orphelin : le titre nomme le mois affiché, le
+          sélecteur en est le jumeau interactif. */}
+      <div className="flex flex-wrap items-center justify-between gap-x-16 gap-y-8">
+        <div className="min-w-0">
+          {/* h1 conservé pour la structure de titres (accessibilité). */}
+          <h1 className="text-label font-medium uppercase tracking-wide text-foggy">
+            Tableau de bord
+          </h1>
+          <p className="mt-2 text-heading-sm font-semibold capitalize text-hof">
+            {monthLabel(period)}
+          </p>
+        </div>
         <label className="flex items-center gap-8 text-label font-medium text-foggy">
-          Mois
+          <span className="sr-only sm:not-sr-only">Mois</span>
           <input
             type="month"
             value={period}
             max={currentPeriod()}
             onChange={(e) => e.target.value && setPeriod(e.target.value)}
-            className="h-40 rounded-lg border border-bebe bg-white px-12 text-body text-hof focus:border-hof focus:outline-none"
+            className="h-40 rounded-lg border border-bebe bg-white px-12 text-body text-hof transition-colors hover:border-grey-500 focus:border-hof focus:outline-none"
           />
         </label>
       </div>
@@ -184,7 +190,7 @@ export default function DashboardPage() {
           {/* ---- Le mois : l'élément héroïque ---- */}
           <Card className="rounded-xl p-24 sm:p-32">
             <p className="text-label font-medium text-foggy">
-              Loyers encaissés · {monthLabel(period)}
+              Loyers encaissés
             </p>
 
             {/* LA RÉPONSE : le pourcentage en grand. Les montants qui le

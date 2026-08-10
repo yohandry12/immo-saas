@@ -115,3 +115,23 @@ export function IconChevronLeft(props: SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
+
+/** Chevron bas — ouvre le menu avatar de la Topbar. */
+export function IconChevronDown(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...base(props)}>
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+
+/** Déconnexion — la porte de sortie, dans le menu avatar. */
+export function IconLogout(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...base(props)}>
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <path d="m16 17 5-5-5-5" />
+      <path d="M21 12H9" />
+    </svg>
+  );
+}
